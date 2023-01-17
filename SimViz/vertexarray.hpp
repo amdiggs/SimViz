@@ -18,10 +18,10 @@ public:
     VertexArray();
     ~VertexArray();
     
-    void bind();
-    void unbind();
-    void AddBuffer(const void* off_set, unsigned int size, int num);
-    void AddBuffer(const void* off_set, int num);
+    void bind() const;
+    void unbind()const;
+    unsigned int AddBuffer(const void* off_set, unsigned int size, int num);
+    //void AddBuffer(const void* off_set, int num);
     void Add_Vertex_Buffer(VertexBuffer& vb);
     
 };

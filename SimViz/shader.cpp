@@ -39,11 +39,11 @@ Shader::~Shader(){
 
 
 
-void Shader::bind(){
+void Shader::bind() const {
     glUseProgram(m_ID);
 }
 
-void Shader::unbind(){
+void Shader::unbind() const {
     glUseProgram(0);
 }
 
@@ -141,7 +141,7 @@ std::string Shader::get_sh_str(std::string sh_type, std::string sh_file){
 
 
 
-void Shader::Set_Uniforms(Operator& op, Light_Src src){
+void Shader::Set_Uniforms(Operator& op, Light_Src& src){
     bind();
     op.set_Model();
     op.set_View();
@@ -165,15 +165,15 @@ void Shader::Set_Value(char type, const float* mat_ptr) const {
     switch (type) {
             
         case 'M':
-            glUniformMatrix4fv(MV_loc,1,GL_FALSE, mat_ptr);
+            glUniformMatrix4fv(MV_loc,1,GL_TRUE, mat_ptr);
             break;
             
         case 'N':
-            glUniformMatrix4fv(N_loc,1,GL_FALSE, mat_ptr);
+            glUniformMatrix4fv(N_loc,1,GL_TRUE, mat_ptr);
             break;
             
         case 'P':
-            glUniformMatrix4fv(MVP_loc,1,GL_FALSE, mat_ptr);
+            glUniformMatrix4fv(MVP_loc,1,GL_TRUE, mat_ptr);
             break;
             
         default:
@@ -210,6 +210,20 @@ void Shader::Set_Value(char type, const float& f) const {
     glUniform1f(sat_loc,f);
 }
 
+void Shader::Set_Uniform(const char *name, const AMD::Vec3 *vec) const {
+    int loc = UniformLoc(name);
+    glUniform3fv(loc,1,(float*)vec);
+}
+
+void Shader::Set_Uniform(const char *name, const AMD::Vec3 vec[], int count) const {
+    int loc = UniformLoc(name);
+    glUniform3fv(loc,count,(float*)&vec[0]);
+}
+
+void Shader::Set_Uniform(const char* name, const int typs[], int count) const{
+    int loc = UniformLoc(name);
+    glUniform1iv(loc,count,(int*)&typs[0]);
+}
 
 
 

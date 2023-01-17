@@ -21,7 +21,7 @@ VertexArray::~VertexArray(){
 }
 
 
-void VertexArray::AddBuffer( const void* off_set,unsigned int size, int num ){
+unsigned int VertexArray::AddBuffer( const void* off_set,unsigned int size, int num ){
     bind();
     unsigned int testVBO;
     int num_comp = size/sizeof(float);
@@ -36,6 +36,7 @@ void VertexArray::AddBuffer( const void* off_set,unsigned int size, int num ){
     glBindVertexArray(0);
     count++;
     
+    return testVBO;
 }
 
 
@@ -51,17 +52,17 @@ void VertexArray::Add_Vertex_Buffer(VertexBuffer& vb){
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(AMD::Vertex), (void*)offsetof(AMD::Vertex, clr));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AMD::Vertex), (void*)offsetof(AMD::Vertex, norm));
-    //glEnableVertexAttribArray(3);
     unbind();
     vb.unbind();
+    count+=3;
 }
 
-void VertexArray::bind(){
+void VertexArray::bind()const{
     
     glBindVertexArray(m_ID);
     
 }
 
-void VertexArray::unbind(){
+void VertexArray::unbind()const{
     glBindVertexArray(0);
 }

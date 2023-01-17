@@ -38,9 +38,9 @@ public:
     ~IndexBuffer();
     
     void Gen_Buffer(const void* data, unsigned int count);
-    void bind();
-    void unbind();
-    unsigned int get_num();
+    void bind() const;
+    void unbind() const;
+    unsigned int get_num() const;
     
 };
 

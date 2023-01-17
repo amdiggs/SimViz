@@ -24,7 +24,6 @@ uniform mat4 u_Normal;
 
 
 
-
 float size;
 int at_type;
 const float sizes[3] = float[3](0.45, 1.0, 1.4);
@@ -53,7 +52,7 @@ void main()
 #SHADER GEOMETRY
 #version 330 core
 layout (triangles) in;
-layout (triangle_strip, max_vertices = 3) out;
+layout (line_strip, max_vertices = 3) out;
 
 out vec3 f_pos;
 out vec3 f_norm;
@@ -169,7 +168,7 @@ void main()
     spec_dot = pow(DOT_PROD(f_cam_dir, reflection),10.0);
     vec3 temp_color = diffuse_dot*(vec3(l_color.xyz) + 1.0*spec_dot*vec3(1.0));
     color = vec4(abs(f_norm.x),abs(f_norm.y),abs(f_norm.z),1.0);
-    color = f_color;
+    color = vec4(0.2,0.2,0.2,1.0);
 }
 
 #END

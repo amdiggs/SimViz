@@ -358,7 +358,7 @@ void Sphere::Gen_points(){
             y = rad*sin(phi)*sin(theta);
             z = rad*cos(theta);
             verts[m_num_verts].pos = Vec3(x,y,z);
-            verts[m_num_verts].clr = m_clr;
+            verts[m_num_verts].clr = Vec4(0.5, 0.0, z, 1.0);
             verts[m_num_verts].norm = Vec3(x,y,z);
             verts[m_num_verts].texture[0] = theta/3.14; verts[m_num_verts].texture[1] = phi/6.28;
             verts[m_num_verts].tex_indx = 0.0;

@@ -70,16 +70,16 @@ void IndexBuffer::Gen_Buffer(const void* data, unsigned int count){
     
 }
 
-void IndexBuffer::bind(){
+void IndexBuffer::bind() const {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_ID);
     
 }
 
-void IndexBuffer::unbind(){
+void IndexBuffer::unbind() const {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-unsigned int IndexBuffer::get_num(){
+unsigned int IndexBuffer::get_num() const{
     return m_count;
 }
 

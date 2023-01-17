@@ -18,6 +18,7 @@
 class Operator;
 class Light_Src;
 
+
 class Shader{
 private:
     
@@ -37,12 +38,16 @@ public:
     Shader(std::string file_name);
     ~Shader();
     
-    void bind();
-    void unbind();
+    void bind() const;
+    void unbind() const;
     int UniformLoc(const char* name) const;
     void Get_Uniforms(int texc, const char* texv[]);
     
-    void Set_Uniforms(Operator& op, Light_Src src);
+    void Set_Uniforms(Operator& op, Light_Src& src);
+    void Set_Uniform(const char* name, const AMD::Vec3* vec) const;
+    void Set_Uniform(const char* name, const AMD::Vec3 vec[], int count) const;
+    void Set_Uniform(const char* name, const int typs[], int count) const;
+    
     void Set_Value(char type, const float* mat_ptr) const;
     void Set_Value(char type, const AMD::Vec3& vec) const;
     void Set_Value(char type, const AMD::Vec4& vec) const;

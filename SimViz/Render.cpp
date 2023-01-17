@@ -5,8 +5,12 @@
 //  Created by Andrew Diggs on 9/16/22.
 //
 
-#include "my_UI.hpp"
+#include "Render.hpp"
 #include "Operations.hpp"
+#include "shader.hpp"
+#include "vertexbuffer.hpp"
+#include "vertexarray.hpp"
+#include "Object.hpp"
 
 bool save = false;
 
@@ -33,7 +37,7 @@ UI_Window::UI_Window(float pos_x, float pos_y, GLFWwindow* window)
     m_cc[3] = 0.0;
     
     (void)m_io;
-    m_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+    //m_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
     //m_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     m_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     m_io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -92,9 +96,7 @@ void UI_Window::render() const{
 
 
 
-void UI_Window::Model_UI(Operator& op ,Light_Src& light_src){
-    static float theta = 0.0;
-    static float phi = 0.0;
+void UI_Window::Model_UI(Operator& op, Light_Src& light_src ){
     static AMD::Vec3 trans;
     const ImGuiKey m_keys[4] ={ImGuiKey_UpArrow, ImGuiKey_DownArrow, ImGuiKey_RightArrow, ImGuiKey_LeftArrow};
     
@@ -112,6 +114,7 @@ void UI_Window::Model_UI(Operator& op ,Light_Src& light_src){
     ImGui::InputFloat("Far", &op.get_proj_vec()[3], 0.1f, 1.0f, "%.1f");
     ImGui::InputFloat("X Lim", &op.get_proj_vec()[0], 0.1f, 1.0f, "%.1f");
     ImGui::InputFloat("Y Lim", &op.get_proj_vec()[1], 0.1f, 1.0f, "%.1f");
+    op.w_scale = view_y / view_x;
    
     
     
@@ -211,6 +214,30 @@ void UI_Window::Model_UI(Operator& op ,Light_Src& light_src){
     
     
     
+
+
+    
+    
+        if (ImGui::Button("SAVE")){
+            save = true;
+        }
+    
+
+    static float theta = 0.0;
+    static float phi = 0.0;
+    AMD::Vec3 light = light_src.get_light_src();
+    
+    ImGui::Text("The Light Source is at");
+    ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light[0],light[1],light[2]);
+    
+    ImGui::SliderFloat("Theta", &theta,0.0, 6.28, "%.2f");
+    ImGui::SameLine();
+    ImGui::SliderFloat("Phi", &phi,0.0, 6.28, "%.2f");
+    
+    light_src.set_light_dir(theta, phi);
+    
+    
+    
     ImGui::Text("Light Color:"); ImGui::SameLine(); ImGui::Text("Clear Color:");
     float w = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.y) * 0.40f;
     ImGui::SetNextItemWidth(w);
@@ -218,28 +245,10 @@ void UI_Window::Model_UI(Operator& op ,Light_Src& light_src){
     ImGui::SameLine();
     ImGui::SetNextItemWidth(w);
     ImGui::ColorPicker3("##MyColor##3", (float*)(&m_cc), ImGuiColorEditFlags_NoInputs);
-
-
-    static int div1 = 0;
-    static int div2 = 0;
-    ImGui::VSliderInt("theta", ImVec2(30, 160), &div1, 0, 24);
-    ImGui::SameLine();
-    ImGui::VSliderInt("phi", ImVec2(30, 160), &div2, 0, 24);
-    theta = _pi*(div1/10.0);
-    phi = _pi*(div2/10.0);
     
-    light_src.set_light_dir(theta, phi);
-    AMD::Vec3 light = light_src.get_light_src();
-    ImGui::Text("x = %f, y = %f, z = %f", light[0],light[1],light[2]);
+
     
     ImGui::InputFloat("Color Saturation", light_src.get_src_ptr(), 0.01f, 1.0f, "%.2f");
-    
-    
-        if (ImGui::Button("SAVE")){
-            save = true;
-        }
-    
-    
     
 
     
@@ -249,7 +258,37 @@ void UI_Window::Model_UI(Operator& op ,Light_Src& light_src){
 
 
 
+void UI_Window::Light_UI(Light_Src& light_src){
+    static float theta = 0.0;
+    static float phi = 0.0;
+    AMD::Vec3 light = light_src.get_light_src();
+    
+    ImGui::Begin("Lighting");
+    ImGui::Text("The Light Source is at");
+    ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light[0],light[1],light[2]);
+    
+    ImGui::SliderFloat("Theta", &theta,0.0, 6.28, "%.2f");
+    ImGui::SameLine();
+    ImGui::SliderFloat("Phi", &phi,0.0, 6.28, "%.2f");
+    
+    light_src.set_light_dir(theta, phi);
+    
+    
+    
+    ImGui::Text("Light Color:"); ImGui::SameLine(); ImGui::Text("Clear Color:");
+    float w = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.y) * 0.40f;
+    ImGui::SetNextItemWidth(w);
+    ImGui::ColorPicker4("##MyColor##2", light_src.get_clr_ptr(), ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha);
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(w);
+    ImGui::ColorPicker3("##MyColor##3", (float*)(&m_cc), ImGuiColorEditFlags_NoInputs);
+    
 
+    
+    ImGui::InputFloat("Color Saturation", light_src.get_src_ptr(), 0.01f, 1.0f, "%.2f");
+    
+    ImGui::End();
+}
 
 
 
@@ -394,6 +433,7 @@ void UI_Window::log_window( AMD::Vertex* verts, unsigned int* idx ,int num){
 
 
 void UI_Window::log_window( AMD::Mat4 mat){
+    ImGui::Begin("window");
     if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Hideable))
     {
         ImGui::TableSetupColumn("1");
@@ -409,12 +449,13 @@ void UI_Window::log_window( AMD::Mat4 mat){
             for (int column = 0; column < 4; column++)
             {
                 ImGui::TableSetColumnIndex(column);
-                ImGui::Text("%f", mat[column][row]);
+                ImGui::Text("%f", mat[row][column]);
             }
 
         }
         ImGui::EndTable();
     }
+    ImGui::End();
 }
 
 
@@ -479,6 +520,165 @@ void UI_Window::Write_Buffer(std::string file_name){
     return;
     
 }
+
+
+
+
+
+Renderer::Renderer()
+: m_w(1600), m_h(1600), m_cc(0.1, 0.0, 0.4, 0.0)
+{   glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHintString(GLFW_COCOA_FRAME_NAME, "testframe");
+    this -> m_window = glfwCreateWindow(m_w, m_h,"SimViz", NULL, NULL);
+    set_context();
+    glfwMakeContextCurrent(m_window);
+    glfwSwapInterval(1);
+    glewExperimental = GL_TRUE;
+    glewInit();
+    
+    
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    //glEnable(GL_CULL_FACE);
+    //glFrontFace(GL_CW);
+    //glCullFace(GL_BACK);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+
+    
+}
+
+
+Renderer::~Renderer(){
+    //if(save){Write_Curr_Buffer(save_file);}
+    glfwTerminate();
+}
+
+
+
+void Renderer::check(GLFWwindow* window){
+    if (!window)
+    {
+        glfwTerminate();
+        exit(-1);
+    }
+}
+
+
+void Renderer::set_context(){
+    glfwMakeContextCurrent(m_window);
+    glfwSwapInterval(1);
+    glewExperimental = GL_TRUE;
+    glewInit();
+}
+
+void Renderer::set_color(float clr[4]) {
+    m_cc[0] = clr[0]; m_cc[1] = clr[1];
+    m_cc[2] = clr[2]; m_cc[3] = clr[3];
+}
+
+void Renderer::set_color(AMD::Vec4 clr){
+    m_cc[0] = clr[0]; m_cc[1] = clr[1];
+    m_cc[2] = clr[2]; m_cc[3] = clr[3];
+}
+
+void Renderer::clear(UI_Window& ui){
+    glfwGetFramebufferSize(m_window, &m_w, &m_h);
+    glViewport(0, 0, m_w, m_h);
+    set_color(ui.get_color());
+    ui.view_x = (float)m_w;
+    ui.view_y = (float)m_h;
+    glClearColor(m_cc[0], m_cc[1], m_cc[2], 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+
+void Renderer::Draw(IndexBuffer& ib, VertexArray& va, Shader& sh, GLenum draw_type){
+    sh.bind();
+    va.bind();
+    ib.bind();
+    glDrawElements(draw_type,ib.get_num(), GL_UNSIGNED_INT, 0);
+    
+    
+}
+
+
+
+GLFWwindow* Renderer::get_window(){
+    return this -> m_window;
+}
+
+int Renderer::is_open(){
+    return glfwWindowShouldClose(m_window);
+}
+
+void Renderer::poll(){
+    glfwSwapBuffers(m_window);
+    glfwPollEvents();
+}
+
+
+void Renderer::Write_Buffer(std::string file_name){
+    int count = 0;
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    const int num_pix = 3 * width * height;
+    unsigned char* pixels = new unsigned char[num_pix];
+    
+    std::fstream outfile;
+    outfile.open(file_name, std::ios::out);
+    
+    glPixelStorei(GL_PACK_ALIGNMENT,1);
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    
+    if(outfile.is_open()){
+        outfile << "P3\n" << width << " " << height << "\n255" << std::endl;
+        for (int i = 0; i < width*height; i++){
+            outfile << int(pixels[count]) << " "
+            << int(pixels[count + 1]) << " "
+            << int(pixels[count + 2]) << " " << std::endl;
+            count+=3;
+        }
+    }
+    outfile.close();
+    exit(0);
+    return;
+    
+}
+
+
+float Renderer::Get_Ratio(){
+    return float(m_h) / float(m_w);
+}
+
+/*
+int Renderer::Write_Curr_Buffer(std::string file_name){
+    stbi_flip_vertically_on_write(1);
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    const int num_pix = 3 * width * height;
+    unsigned char* pixels = new unsigned char[num_pix];
+    
+    std::fstream outfile;
+    outfile.open(file_name, std::ios::out);
+    
+    glPixelStorei(GL_PACK_ALIGNMENT,1);
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    
+    if(stbi_write_png(file_name.c_str(), width, height, 3, pixels, width*3*sizeof(unsigned char))){
+        return 1;
+    }
+    else return -1;
+    
+}
+*/
 
 
 

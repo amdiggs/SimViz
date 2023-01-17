@@ -14,13 +14,15 @@
 		3826BD6D295E5CD500938F3B /* libGLEW.2.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 3826BD6C295E5CD500938F3B /* libGLEW.2.2.0.dylib */; };
 		3826BD6E295E5CD500938F3B /* libGLEW.2.2.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 3826BD6C295E5CD500938F3B /* libGLEW.2.2.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		3826BD71295E5D1600938F3B /* libglfw.3.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 3826BD70295E5D1600938F3B /* libglfw.3.3.dylib */; };
+		384B8F88296BA2190099CCF1 /* Atomic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 384B8F87296BA2190099CCF1 /* Atomic.cpp */; };
+		384B8F8B296BA2730099CCF1 /* FileIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 384B8F89296BA2730099CCF1 /* FileIO.cpp */; };
 		385A5C2E2968EBD000D500A7 /* vertexbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 385A5C2D2968EBD000D500A7 /* vertexbuffer.cpp */; };
 		389038F62964E63200F0E74B /* vertexarray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 389038F42964E63200F0E74B /* vertexarray.cpp */; };
 		389038FA2964E8EA00F0E74B /* Object.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 389038F82964E8EA00F0E74B /* Object.cpp */; };
 		389038FD2964EB2500F0E74B /* shader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 389038FC2964EB2500F0E74B /* shader.cpp */; };
 		389039002964EB5600F0E74B /* Operations.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 389038FE2964EB5600F0E74B /* Operations.cpp */; };
 		389039032964EB8100F0E74B /* Shapes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 389039012964EB8100F0E74B /* Shapes.cpp */; };
-		38D212BE2968FDB600F69BE5 /* my_UI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38D212BD2968FDB600F69BE5 /* my_UI.cpp */; };
+		38D212BE2968FDB600F69BE5 /* Render.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38D212BD2968FDB600F69BE5 /* Render.cpp */; };
 		38D212CB296907E000F69BE5 /* imgui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38D212BF296907E000F69BE5 /* imgui.cpp */; };
 		38D212CC296907E000F69BE5 /* imgui_demo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38D212C1296907E000F69BE5 /* imgui_demo.cpp */; };
 		38D212CD296907E000F69BE5 /* imgui_widgets.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38D212C5296907E000F69BE5 /* imgui_widgets.cpp */; };
@@ -62,6 +64,10 @@
 		3826BD6A295E5C3800938F3B /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		3826BD6C295E5CD500938F3B /* libGLEW.2.2.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGLEW.2.2.0.dylib; path = ../../../../../opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib; sourceTree = "<group>"; };
 		3826BD70295E5D1600938F3B /* libglfw.3.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.3.dylib; path = ../../../../../opt/homebrew/Cellar/glfw/3.3.7/lib/libglfw.3.3.dylib; sourceTree = "<group>"; };
+		384B8F86296BA2190099CCF1 /* Atomic.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Atomic.hpp; sourceTree = "<group>"; };
+		384B8F87296BA2190099CCF1 /* Atomic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Atomic.cpp; sourceTree = "<group>"; };
+		384B8F89296BA2730099CCF1 /* FileIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FileIO.cpp; sourceTree = "<group>"; };
+		384B8F8A296BA2730099CCF1 /* FileIO.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FileIO.hpp; sourceTree = "<group>"; };
 		385A5C2C2968EBD000D500A7 /* vertexbuffer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = vertexbuffer.hpp; sourceTree = "<group>"; };
 		385A5C2D2968EBD000D500A7 /* vertexbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vertexbuffer.cpp; sourceTree = "<group>"; };
 		387E659E2968F6A800654F10 /* Shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Shaders; sourceTree = "<group>"; };
@@ -76,8 +82,8 @@
 		389038FF2964EB5600F0E74B /* Operations.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Operations.hpp; sourceTree = "<group>"; };
 		389039012964EB8100F0E74B /* Shapes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Shapes.cpp; sourceTree = "<group>"; };
 		389039022964EB8100F0E74B /* Shapes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Shapes.hpp; sourceTree = "<group>"; };
-		38D212BC2968FDB600F69BE5 /* my_UI.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = my_UI.hpp; sourceTree = "<group>"; };
-		38D212BD2968FDB600F69BE5 /* my_UI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = my_UI.cpp; sourceTree = "<group>"; };
+		38D212BC2968FDB600F69BE5 /* Render.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Render.hpp; sourceTree = "<group>"; };
+		38D212BD2968FDB600F69BE5 /* Render.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Render.cpp; sourceTree = "<group>"; };
 		38D212BF296907E000F69BE5 /* imgui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui.cpp; sourceTree = "<group>"; };
 		38D212C0296907E000F69BE5 /* imstb_rectpack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = imstb_rectpack.h; sourceTree = "<group>"; };
 		38D212C1296907E000F69BE5 /* imgui_demo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_demo.cpp; sourceTree = "<group>"; };
@@ -134,8 +140,12 @@
 		3826BD5B295E4F1100938F3B /* SimViz */ = {
 			isa = PBXGroup;
 			children = (
-				38D212BD2968FDB600F69BE5 /* my_UI.cpp */,
-				38D212BC2968FDB600F69BE5 /* my_UI.hpp */,
+				384B8F89296BA2730099CCF1 /* FileIO.cpp */,
+				384B8F8A296BA2730099CCF1 /* FileIO.hpp */,
+				384B8F87296BA2190099CCF1 /* Atomic.cpp */,
+				384B8F86296BA2190099CCF1 /* Atomic.hpp */,
+				38D212BD2968FDB600F69BE5 /* Render.cpp */,
+				38D212BC2968FDB600F69BE5 /* Render.hpp */,
 				385A5C2D2968EBD000D500A7 /* vertexbuffer.cpp */,
 				385A5C2C2968EBD000D500A7 /* vertexbuffer.hpp */,
 				389039012964EB8100F0E74B /* Shapes.cpp */,
@@ -257,9 +267,11 @@
 				389038F62964E63200F0E74B /* vertexarray.cpp in Sources */,
 				38D212CC296907E000F69BE5 /* imgui_demo.cpp in Sources */,
 				38D212D3296907FC00F69BE5 /* imgui_impl_opengl3.cpp in Sources */,
+				384B8F88296BA2190099CCF1 /* Atomic.cpp in Sources */,
 				389038FA2964E8EA00F0E74B /* Object.cpp in Sources */,
 				38D212CD296907E000F69BE5 /* imgui_widgets.cpp in Sources */,
-				38D212BE2968FDB600F69BE5 /* my_UI.cpp in Sources */,
+				384B8F8B296BA2730099CCF1 /* FileIO.cpp in Sources */,
+				38D212BE2968FDB600F69BE5 /* Render.cpp in Sources */,
 				3803F9592962609900030C35 /* AMDmath.cpp in Sources */,
 				389039032964EB8100F0E74B /* Shapes.cpp in Sources */,
 				38D212CF296907E000F69BE5 /* imgui_tables.cpp in Sources */,

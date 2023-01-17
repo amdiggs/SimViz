@@ -5,8 +5,8 @@
 //  Created by Andrew Diggs on 9/16/22.
 //
 
-#ifndef my_UI_hpp
-#define my_UI_hpp
+#ifndef Render_hpp
+#define Render_hpp
 
 #include <stdio.h>
 #include "OGL.h"
@@ -20,6 +20,52 @@ class Light_Src;
 
 ImGuiIO& init_io();
 
+class VertexArray;
+class Shader;
+class IndexBuffer;
+class UI_Window;
+class Atom;
+class Bond;
+class Atom_Mesh;
+class Bonds;
+class Grid_Mesh;
+class Quad_Mesh;
+class Box_Bounds;
+class Test_Object;
+
+class Renderer{
+private:
+    GLFWwindow* m_window;
+    void check(GLFWwindow* window);
+    AMD::Vec4 m_cc;
+    int m_w, m_h;
+    std::string save_file = "/Users/diggs/Desktop/test.png";
+    
+    
+    
+public:
+    Renderer();
+    ~Renderer();
+    GLFWwindow* get_window();
+    void set_context();
+    void set_color(float clr[4]);
+    void set_color(AMD::Vec4 clr);
+    void Draw_Instanced(IndexBuffer& ib, VertexArray& va, Shader& sh, GLenum draw_type, int num);
+    void Draw(IndexBuffer& ib, VertexArray& va, Shader& sh, GLenum draw_type);
+    int is_open();
+    void poll();
+    void clear(UI_Window& ui);
+    void Write_Buffer(std::string file_name);
+    float Get_Ratio();
+    //int Write_Curr_Buffer(std::string file_name);
+    
+    
+    
+};
+
+
+
+
 class UI_Window{
 private:
     GLFWwindow* m_window;
@@ -28,7 +74,6 @@ private:
     AMD::Vec4 Ob_clr;
     
     ImGuiDockNodeFlags m_doc_flags =  ImGuiDockNodeFlags_PassthruCentralNode;
-    float view_x, view_y, view_z;
     float m_x, m_y;
     int display_w, display_h;
     float  ui_x, ui_y;
@@ -40,8 +85,9 @@ public:
     UI_Window(float pos_x, float pos_y,GLFWwindow* window);
     ~UI_Window();
     
-    
-    void Model_UI(Operator& op ,Light_Src& light_src);
+    float view_x, view_y;
+    void Model_UI(Operator& op, Light_Src& light_src );
+    void Light_UI(Light_Src& light_src);
     void render() const;
     void NewFrame() const;
     
@@ -63,4 +109,4 @@ public:
 
 
 
-#endif /* my_UI_hpp */
+#endif /* Render_hpp */

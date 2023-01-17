@@ -30,7 +30,7 @@ class SHAPE{
 protected:
     int m_num_idx;
     int m_num_verts;
-    const int m_num_theta = 60;
+    const int m_num_theta = 30;
     const float m_dth = _2pi/m_num_theta;
     void Gen_cyl_index(int off_set);
     void Gen_fan_index(int count, int tip);

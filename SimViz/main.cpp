@@ -8,6 +8,8 @@
 #define GLFW_EXPOSE_NATIVE_COCOA
 #define ShFile "/Users/diggs/Desktop/SimViz/Shaders/atom.fs"
 
+#define LOG(x) std::cout << x << std::endl
+
 #include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -18,86 +20,50 @@
 #include "Shapes.hpp"
 #include "AMDmath.hpp"
 #include "Operations.hpp"
-#include "my_UI.hpp"
+#include "Render.hpp"
+#include "Object.hpp"
+
+#include "FileIO.hpp"
+#include "Atomic.hpp"
 
 
-void Simple_Test(){
-    Shader sh(ShFile);
-    Sphere sp(1.0);
-    VertexArray VAO;
-    VertexBuffer VBO(sp.verts, sp.num_verts()*sizeof(AMD::Vertex));
-    VAO.Add_Vertex_Buffer(VBO);
-    IndexBuffer IBO;
-    IBO.Gen_Buffer(sp.indices, sp.num_idx());
-    sh.bind();
-}
+const char* test_file = "/Users/diggs/Desktop/TOPCon/OUT-FILES/out-nuc-1-14-23-2/nuc-1.36.dump";
+extern int num_lines;
 
-int main(void)
-{
-    GLFWwindow* window;
-    std::cout << "Testing" << std::endl;
+void JUNK(Simulation& sim){
     
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHintString(GLFW_COCOA_FRAME_NAME, "testframe");
+    Renderer rend;
     
-    window = glfwCreateWindow(1600, 1200, "SimViz", NULL, NULL);
+    Atom_Mesh at;
+    at.Add_Instance_Layout(sim);
     
-    
-    if(!window){
-        glfwTerminate();
-        return -1;
-    }
-    
-    
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-    glewExperimental = GL_TRUE;
-    glewInit();
-    
-    
-    std::cout << glGetString(GL_VERSION) << std::endl;
-    
-    Sphere sp(1.0);
-    VertexArray VAO;
-    VertexBuffer VBO(sp.verts, sp.num_verts()*sizeof(AMD::Vertex));
-    VAO.Add_Vertex_Buffer(VBO);
-    IndexBuffer IBO;
-    IBO.Gen_Buffer(sp.indices, sp.num_idx());
-    Shader sh("/Users/diggs/Desktop/SimViz/SimViz/Shaders/atom.fs");
-    sh.bind();
     
     Operator op;
     Light_Src l_src;
     
-    UI_Window ui(0.0,0.0,window);
-    while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.1, 0.0, 0.35, 0.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        sh.Set_Uniforms(op, l_src);
-        sh.bind();
-        VAO.bind();
-        IBO.bind();
-        glDrawElements(GL_TRIANGLES,IBO.get_num(), GL_UNSIGNED_INT, 0);
+    UI_Window ui(0.0,0.0,rend.get_window());
+    while (!rend.is_open()) {
+        rend.clear(ui);
+        at.Set_OPs(op, l_src, 1);
+        at.Set_OPs(op, l_src, 2);
+        at.Draw();
         
         ui.NewFrame();
         ui.Model_UI(op, l_src);
+        ui.log_window(op.M_mat);
+        ui.log_window(op.Proj_mat);
         ui.render();
         
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        rend.poll();
         
     }
     
-    glfwTerminate();
+}
+
+int main(void)
+{
+    Simulation test = read_dump(test_file);
+    JUNK(test);
+
     return 0;
 }

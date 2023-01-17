@@ -12,10 +12,8 @@
 
 Operator::Operator()
 {
-    
     Proj_vec = AMD::Vec4(3.0, 3.0, 1.0, 10.0);
-    M_scale = 1.25;
-    M_Scale_vec = AMD::Vec3(M_scale,M_scale,M_scale);
+    M_Scale_vec = AMD::Vec3(1.0, 1.0,1.0);
     M_Trans_vec.z = 3.5;
     
 }
@@ -49,13 +47,11 @@ void Operator::Reset(AMD::Mat4& mat){
 void Operator::Projection(AMD::Vec4 vec){
     float near = vec.b;
     float far = vec.a;
-    float dz = abs(far - near);
-    float yalpha = vec.g / (2.0 * dz);
-    float xalpha = vec.r/(2.0 * dz);
+    float a2 = 1.0 / (tan(0.5*_pi2));
     
     
-    Proj_mat[0][0] = near;
-    Proj_mat[1][1] = near;
+    Proj_mat[0][0] = a2 * w_scale;
+    Proj_mat[1][1] = a2;
     Proj_mat[2][2] = (far + near) / (far - near);
     Proj_mat[2][3] = (-2.0*far*near) / (far - near);
     Proj_mat[3][2] = 1.0;
@@ -71,11 +67,9 @@ void Operator::Projection(AMD::Vec4 vec){
 
 
 void Operator::M_set_rotation() {
-    Normal_mat.Transpose();
     M_Rot_mat.Rotate(M_rotation_vec);
     Normal_mat.Rotate(M_rotation_vec);
     M_rotation_vec.Reset();
-    Normal_mat.Transpose();
 
 }
 
@@ -85,33 +79,19 @@ AMD::Vec3& Operator::M_Get_Trans(){
 }
 
 
-float& Operator::M_Get_Scale(){
-    return M_scale;
-}
-
-void Operator::M_Set_Scale(){
-    M_Scale_vec = AMD::Vec3(M_scale,M_scale,M_scale);
-}
-
 void Operator::set_Model(){
     Reset(M_mat);
-    M_Set_Scale();
-    M_mat.Scale(M_Scale_vec);
     M_mat = M_Rot_mat * M_mat;
+    M_mat.Scale(M_Scale_vec);
     M_mat.Translate(M_Trans_vec);
 }
 
 
 
 //#############################################################
-void Operator::V_set_rotation(float ax, float ay, float az){
-    V_mat.Rotate(V_rotation);
-}
 
-void Operator::V_set_rotation(){
-    V_mat.Translate(V_translation);
-    V_mat.Rotate(V_rotation);
-    
+AMD::Vec3& Operator::V_get_trans(){
+    return this -> V_translation;
 }
 
 void Operator::V_set_translation(AMD::Vec3 tr){
@@ -124,7 +104,7 @@ void Operator::V_set_translation(){
 
 
 void Operator::V_set_scale(float sc){
-    V_mat.Scale(AMD::Vec3(w_scale*sc,sc,sc));
+    V_mat.Scale(AMD::Vec3(sc,sc,sc));
 }
 
 void Operator::set_View(){
@@ -142,8 +122,7 @@ float* Operator::get_V_scale(){
 
 void Operator::set_MV(){
     
-    MV_mat = V_mat * M_mat;
-    MV_mat.Transpose();
+    MV_mat = M_mat;
 }
 
 void Operator::set_projection() {
@@ -158,8 +137,7 @@ AMD::Vec4& Operator::get_proj_vec(){
 
 void Operator::set_MVP(){
     
-    MVP_mat = Proj_mat *V_mat * M_mat;
-    MVP_mat.Transpose();
+    MVP_mat = Proj_mat * M_mat;
     
 }
 

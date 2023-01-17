@@ -25,7 +25,6 @@ public:
     //Model Matrix
     AMD::Mat4 M_mat;
     const float* M_ptr = &M_mat.m[0][0];
-    float M_scale =1.0;
     AMD::Vec3 M_Scale_vec;
     AMD::Vec3 M_Trans_vec;
     AMD::Vec3 M_rotation_vec;
@@ -44,7 +43,6 @@ public:
     const float* V_ptr = &V_mat.m[0][0];
     int V_loc;
     AMD::Vec3 V_translation;
-    AMD::Vec3 V_rotation;
     float V_scale = 1.0;
     
     AMD::Mat4 MV_mat;
@@ -77,13 +75,9 @@ public:
     void M_Set_Scale();
     void set_Model() ;
     
-    
-    
-    void V_set_rotation(float ax, float ay, float az);
-    void V_set_rotation();
+    AMD::Vec3& V_get_trans();
     void V_set_translation(AMD::Vec3 tr);
     void V_set_translation();
-    void V_set_scale(AMD::Vec4);
     void V_set_scale(float sc);
     float* get_V_scale();
     void set_View() ;
