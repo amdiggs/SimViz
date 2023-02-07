@@ -6,21 +6,25 @@
 //
 
 #include "FileIO.hpp"
-#include "Atomic.hpp"
 
-
-int num_lines;
-int block_len;
+namespace fs = std::filesystem;
 
 std::string m_dig = "[[:digit:]]+";
 std::string m_float = "[[:digit:]]+\\.[[:digit:]]+";
 std::string m_space = "[[:blank:]]";
 std::string m_exp_float = "[[:digit:]]+\\.[[:digit:]]+e\\+[[:digit:]]+";
 std::string m_comment = "#.*";
+std::string dump_file = ".dump";
+std::string dat_file = ".dat";
 
 bool match(std::string input, std::string m_type){
     std::regex reg (m_type);
     return std::regex_match(input,reg);
+}
+
+bool search(std::string input, std::string m_type){
+    std::regex reg (m_type);
+    return std::regex_search(input,reg);
 }
 
 bool match_int(std::string input){
@@ -39,7 +43,9 @@ bool match_comment(std::string input){
     return  match(input, m_comment);
 }
 
-
+bool match_atom_file(std::string input){
+    return search(input, dump_file) || search(input, dat_file);
+}
 
 int get_int(std::string int_str)
 {
@@ -79,11 +85,22 @@ bool ITEM(std::string str, std::string reg_ex)
 }
 
 
-char** Read_File(const char* file){
+char* Read_Line(std::ifstream& in_file){
+    char* line = nullptr;
+    char temp[100];
+    in_file.getline(temp, 100);
+    int num_c = (int)in_file.gcount();
+    line = (char*)malloc(num_c*sizeof(char));
+    for(int i = 0; i< num_c; i++){
+        line[i] = temp[i];
+    }
+    return line;
+}
+
+
+char** Read_File(const char* file, int& num_lines, int& bloc_len){
     char** contents = nullptr;
-    char** tmp = nullptr;
-    std::ifstream infile (file);
-    std::string line;
+    std::ifstream infile(file, std::ios_base::in);
     int count = 0;
     int ts[2];
     int num_matches = 0;
@@ -91,85 +108,22 @@ char** Read_File(const char* file){
         std::cout << "File did not open!!" << std::endl;
         exit(9);
     }
-    while (getline(infile, line)){
+    while (!infile.eof()){
         count ++;
-        if(num_matches < 2 && match(line, TIMESTEP)){
+        contents = (char**)realloc(contents, count*sizeof(char*));
+        contents[count - 1] = Read_Line(infile);
+        if(num_matches < 2 && match(contents[count - 1], TIMESTEP)){
             ts[num_matches] = count;
             num_matches++;
         }
-        tmp = (char**)realloc(contents, count*sizeof(char*));
-        if(tmp != NULL){
-            contents  = tmp;
-        }
-        else{
-            std::cout << "FUCK THIS" << std::endl;
-            exit(9);
-        }
-        contents[count - 1] = (char*)malloc(line.length()*sizeof(char));
-        for(int i = 0; i< line.length(); i++){
-            contents[count - 1][i] = line[i];
-        }
     }// while
-    block_len = ts[1] - ts[0];
-    num_lines = count;
     infile.close();
+    num_lines = count;
+    bloc_len = ts[1] - ts[0];
     return contents;
 }
 
 
-void Delete_Char_Array(char *** arr){
-    for (int i = 0; i < num_lines; i++){
-        free((*arr)[i]);
-    }
-    free(*arr);
-}
 
-Sim_Block read_block(char** dat, int& start){
-    Sim_Block tmp;
-    std::stringstream ss;
-    tmp.timestep = atoi(dat[start + 1]);
-    tmp.num_atoms = atoi(dat[start + 3]);
-    int count = 0;
-    AMD::Vec3 BB;
-    float lo, hi;
-    for(int i = start + 5; i< start + 8; i++){
-        ss << dat[i];
-        ss >> lo >> hi;
-        tmp.sim_box[count][0] = lo;
-        tmp.sim_box[count][1] = hi;
-        BB[count] = hi - lo;
-        count++;
-        ss.str(std::string());
-        ss.clear();
-        
-    }
-    count = 0;
-    int _id, _type;
-    float xs,ys,zs;
-    for (int i = start + 9; i< start + block_len; i++){
-        ss << dat[i];
-        ss >> _id >> _type >> xs >> ys >> zs;
-        tmp.atoms[count] = Atom(_id, _type, xs*BB.x, ys*BB.y, zs*BB.z);
-        count++;
-        ss.str(std::string());
-        ss.clear();
-    }
-    start += block_len;
-    return tmp;
-}
 
-Simulation read_dump(std::string file)
-{
-    Simulation sim;
-    
-    char** data = Read_File(file.c_str());
-    int num_blocks = num_lines/block_len;
-    sim.Set_Num_Blocks(num_blocks);
-    sim.Set_Blocks(data);
-    sim.Update_Sim(0);
-    Delete_Char_Array(&data);
-    
-    
-    return sim;
-}
 
