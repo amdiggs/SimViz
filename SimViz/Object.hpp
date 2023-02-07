@@ -21,8 +21,9 @@ Shader init_Shader(std::string sh_file);
 
 class Atom_Mesh{
 private:
-    AMD::Vec3 at_coords[3000];
-    int at_types[3000];
+    //AMD::Vec3 at_coords[3000];
+    AMD::Vec3* at_coords;
+    float* at_types;
     int m_num_atoms;
     unsigned int m_num_idx;
     VertexArray m_VAO;
@@ -32,8 +33,10 @@ private:
     Shader m_sh;
     Shader m_sh2;
     unsigned int InstVB[2];
-    unsigned int num_draws;
-    
+    unsigned int InstVBa;
+    unsigned int InstVBb;
+    unsigned int curr_timestep;
+    bool instance_added;
 public:
     Atom_Mesh();
     ~Atom_Mesh();
@@ -41,7 +44,7 @@ public:
     void Bind(int num) const;
     void unBind(int num) const;
     void Draw() const;
-    void Set_OPs(Operator& op, Light_Src& src, int num);
+    void Set_OPs(Operator& op, Light_Src& src, Simulation& sim);
 };
 
 

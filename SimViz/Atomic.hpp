@@ -8,7 +8,7 @@
 #ifndef Atomic_hpp
 #define Atomic_hpp
 
-#define MAX_ATOMS 3000
+#define MAX_ATOMS 6000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,7 +16,7 @@
 #include <string>
 #include <sstream>
 #include "AMDmath.hpp"
-
+class Atom_Mesh;
 
 
 class Atom{
@@ -81,31 +81,40 @@ struct Sim_Block
 
 class Simulation{
 private:
-    float cutoffs[3] = {1.8, 2.6, 1.3};
+    int m_timestep;
+    float cutoffs[3] = {2.6, 1.8, 1.0};
     int block_len;
+    int num_lines;
     int num_blocks;
-    Sim_Block* m_data;
-    int curr_block;
+    int curr_line;
+    char** m_data;
+    bool init;
+    
+    void Read_Dump(const char* file);
+    void Set_Block(int start);
+    void Set_Neighbors();
+    void Get_Num_Lines(const char* file);
     
 public:
-    int m_timestep;
-    int m_num_atoms;
-    float m_sim_box[3][2];
-    Atom m_atoms[MAX_ATOMS];
+    int num_atoms;
+    float sim_box[3][2];
+    Atom atoms[MAX_ATOMS];
     
     int neighbor_IDs[4*MAX_ATOMS][2];
     int num_bonds;
+    
     Simulation();
+    Simulation(const char* file);
     ~Simulation();
     
-    void Set_Neighbors();
-    void Set_Num_Blocks(int);
-    void Set_Blocks(char** dat);
-    void Update_Sim(int block_num);
-    
+    int Get_Timestep();
+    bool Is_Init();
+    void Update_Sim(char dir);
+    void Init_Sim(std::string file);
     float** Compute_Histogram();
+    
+    void print();
 };
 
-Atom* atoms(std::string file);
 
 #endif /* Atomic_hpp */

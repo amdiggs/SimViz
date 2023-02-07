@@ -8,8 +8,13 @@
 #include "Atomic.hpp"
 #include "FileIO.hpp"
 #include "Shapes.hpp"
+#include "Object.hpp"
+#include <thread>
+#include <chrono>
+
 int num_atoms;
 AMD::Vec3 sim_box;
+
 Atom::Atom()
 : m_coords(AMD::Vec3()), m_type(0), m_num_neighbors(0)
 {}
@@ -128,88 +133,37 @@ void Bond::Set_Len() {
 
 
 
-Atom* atoms(std::string file){
-    std::ifstream infile (file);
-    std::string line;
-    std::string item_type;
-    std::string item;
-    std::stringstream ss, ss2;
-    std::string temp;
-    std::string temp2;
-    num_atoms = 0;
-    Atom* local_atoms = nullptr;
-    if (infile.is_open()) {
-        while (getline(infile,line)) {
-            if (ITEM(line, "ITEM:")){
-                ss << line;
-                ss >> item >> item_type;
-                if (ITEM(item_type, "NUMBER")){
-                    getline(infile, line);
-                    num_atoms = atoi(line.c_str());
-                    local_atoms = (Atom*)malloc(num_atoms*sizeof(Atom));
-                    ss.str(std::string());
-                    ss.clear();
-                    continue;
-                }
-                else if (ITEM(item_type, "BOX")){
-                    float low, high;
-                    std::stringstream bbss;
-                    for (int i = 0; i<3; i++){
-                        getline(infile, line);
-                        bbss << line;
-                        bbss >> low >> high;
-                        sim_box[i] = high;
-                        bbss.str(std::string());
-                        bbss.clear();
-                        
-                    }
-                    ss.str(std::string());
-                    ss.clear();
-                    continue;
-                }
-                else if (ITEM(item_type, "ATOMS")){
-                    for (int i = 0; i<num_atoms; i++){
-                        getline(infile,line);
-                        local_atoms[i] = Atom(line);
-                        
-                    }
-                    ss.str(std::string());
-                    ss.clear();
-                }
-                
-                ss.str(std::string());
-                ss.clear();
-            }
-        }
-    }
+Simulation::Simulation()
+:curr_line(0), num_lines(0), init(false) {}
+
+Simulation::Simulation(const char* file)
+:curr_line(0), num_lines(0), init(false)
+{
+    m_data = Read_File(file, num_lines, block_len);
+    Update_Sim('f');
+    init = true;
     
-    return local_atoms;
 }
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Simulation::Simulation()
-:curr_block(0), num_blocks(0), num_bonds(0) {}
 
 Simulation::~Simulation()
 {
+    for (int i = 0; i < num_lines; i++){
+        free(m_data[i]);
+    }
     free(m_data);
 }
 
+
+void Simulation::Init_Sim(std::string file){
+    
+    m_data = Read_File(file.c_str(), num_lines, block_len);
+    Update_Sim('f');
+    init = true;
+    
+}
 void Simulation::Set_Neighbors() { 
     float cut;
     int num_nebs;
@@ -218,11 +172,25 @@ void Simulation::Set_Neighbors() {
     for (int i = 0; i< num_atoms; i++){
         num_nebs =0;
         for (int j = i+1; j< num_atoms; j++){
-            diff = this->m_atoms[i].get_coords() - this->m_atoms[j].get_coords();
-            if(this->m_atoms[i].get_type() == 1 && this->m_atoms[j].get_type() == 2 ){cut = cutoffs[0];}
-            else if(this->m_atoms[i].get_type() == 2 && this->m_atoms[j].get_type() == 2 ){cut = cutoffs[1];}
-            else if(this->m_atoms[i].get_type() == 1 && this->m_atoms[j].get_type() == 1 ){cut = cutoffs[2];}
-            else{cut = 35.7;}
+            diff = this->atoms[i].get_coords() - this->atoms[j].get_coords();
+            switch (atoms[i].get_type() + atoms[j].get_type()) {
+                case 2:
+                    cut = cutoffs[0];
+                    break;
+                    
+                case 3:
+                    cut = cutoffs[1];
+                    break;
+                    
+                case 4:
+                    cut = cutoffs[2];
+                    break;
+                    
+                default:
+                    cut = 0.0;
+                    break;
+            }
+            
             if(diff.len() <= cut){
                 neighbor_IDs[count][0] = i; neighbor_IDs[count][1] = j;
                 count++;
@@ -234,46 +202,74 @@ void Simulation::Set_Neighbors() {
     this -> num_bonds = count;
 }
 
-void Simulation::Set_Num_Blocks(int num){
-    this -> num_blocks = num;
-}
 
 
-void Simulation::Set_Blocks(char** dat){
-    int nb = this->num_blocks;
-    int curr_line = 0;
-    if(nb == 0){
-        std::cout << "Number of data blocks not set" << std::endl;
-        exit(9);
-    }
-    this -> m_data = (Sim_Block*)malloc(nb*sizeof(Sim_Block));
-    for(int i = 0; i < nb; i++){
-        this->m_data[i] = read_block(dat, curr_line);
+void Simulation::Set_Block(int start){
+    if(start + block_len > num_lines){
+        return;
         
     }
-    this -> m_timestep = this -> m_data[0].timestep;
-    this -> m_num_atoms = this -> m_data[0].num_atoms;
-    for(int i = 0; i<3; i++){
-        this -> m_sim_box[i][0] = this -> m_data[0].sim_box[i][0];
-        this -> m_sim_box[i][1] = this -> m_data[0].sim_box[i][1];
+    std::stringstream ss;
+    m_timestep = atoi(m_data[start + 1]);
+    num_atoms = atoi(m_data[start + 3]);
+    int count = 0;
+    AMD::Vec3 BB;
+    float lo, hi;
+    for(int i = start + 5; i< start + 8; i++){
+        ss << m_data[i];
+        ss >> lo >> hi;
+        sim_box[count][0] = lo;
+        sim_box[count][1] = hi;
+        BB[count] = hi - lo;
+        count++;
+        ss.str(std::string());
+        ss.clear();
+        
     }
+    count = 0;
+    int _id, _type;
+    float xs,ys,zs;
+    for (int i = start + 9; i< start + block_len; i++){
+        ss << m_data[i];
+        ss >> _id >> _type >> xs >> ys >> zs;
+        atoms[_id - 1] = Atom(_id, _type, xs*BB.x, ys*BB.y, zs*BB.z);
+        count++;
+        ss.str(std::string());
+        ss.clear();
+    }
+    this -> curr_line = start + block_len;
 }
 
 
-void Simulation::Update_Sim(int block_num){
-    this -> m_timestep = this -> m_data[block_num].timestep;
-    for(int i =0; i<this -> m_num_atoms; i++){
-        Atom test = this -> m_data[block_num].atoms[i];
-        this -> m_atoms[i] = this -> m_data[block_num].atoms[i];
-    
+void Simulation::Update_Sim(char dir){
+    switch (dir) {
+        case 'f':
+            Set_Block(curr_line);
+            break;
+            
+        case 'r':
+            Set_Block(curr_line - 2*block_len);
+            
+        default:
+            break;
     }
-    this -> Set_Neighbors();
+    Set_Neighbors();
+}
+
+
+
+bool Simulation::Is_Init(){
+    return init;
+}
+
+int Simulation::Get_Timestep(){
+    return m_timestep;
 }
 
 float **Simulation::Compute_Histogram() {
-    int na = this->m_num_atoms;
-    int numx = ceil(this -> m_sim_box[0][1]);
-    int numy = ceil(this -> m_sim_box[1][1]);
+    int na = this-> num_atoms;
+    int numx = ceil(this -> sim_box[0][1]);
+    int numy = ceil(this -> sim_box[1][1]);
     
     AMD::Vec3 tmp;
     float** hist = (float**)malloc(numx*numy*sizeof(float*));
@@ -281,7 +277,7 @@ float **Simulation::Compute_Histogram() {
         hist[i] = (float*)malloc(sizeof(float));
     }
     for(int i = 0; i< na; i++){
-        tmp = this->m_atoms[i].get_coords();
+        tmp = this->atoms[i].get_coords();
         int idx = (int)tmp.x;
         int idy = (int)tmp.y;
     }
@@ -294,7 +290,12 @@ float **Simulation::Compute_Histogram() {
 
 
 
-
+void Simulation::print(){
+    for (int i = 0; i< block_len; i++){
+        std::cout << m_data[i] << std::endl;
+        std::cout << "=======================================" << std::endl;
+    }
+}
 
 
 
