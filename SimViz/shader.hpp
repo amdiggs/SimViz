@@ -25,17 +25,18 @@ private:
     unsigned int m_ID;
     unsigned int CompileShader(unsigned int type, const std::string& source);
     void CreateShader(const std::string& vertexShader,const std::string& geometryShader, const std::string& fragmentShader);
+    void CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
     std::string get_sh_str(std::string sh_file);
     std::string get_sh_str(std::string sh_type, std::string sh_file);
     
-    int displace_loc, MV_loc, MVP_loc, N_loc;
+    int MV_loc, MVP_loc, N_loc;
     
      int light_src_loc, light_clr_loc, sat_loc;
     
 
     
 public:
-    Shader(std::string file_name);
+    Shader(std::string file_name, bool geom);
     ~Shader();
     
     void bind() const;
@@ -44,7 +45,7 @@ public:
     void Get_Uniforms(int texc, const char* texv[]);
     
     void Set_Uniforms(Operator& op, Light_Src& src);
-    void Set_Uniform(const char* name, const AMD::Vec3* vec) const;
+    void Set_Uniform3fv(const char* name, const AMD::Vec3* vec) const;
     void Set_Uniform(const char* name, const AMD::Vec3 vec[], int count) const;
     void Set_Uniform(const char* name, const int typs[], int count) const;
     

@@ -127,6 +127,9 @@ AMD::Vec3 Vec3::cross(const AMD::Vec3 &other) const {
     return Vec3(_x, _y, _z);
 }
 
+
+
+
 float Vec3::len() const{
     return sqrt(this->dot(*(this)));
 }
@@ -150,6 +153,22 @@ AMD::Vec3 Vec3::operator*(float scale) {
 AMD::Vec3 Vec3::operator/(float div) {
     return Vec3(x/div,y/div,z/div);
 }
+
+
+AMD::Vec3 Vec3::operator*(const Vec3& other) {
+    float _x = x*other.x;
+    float _y = y*other.y;
+    float _z = z*other.z;
+    return Vec3(_x, _y, _z);
+}
+
+AMD::Vec3 Vec3::operator/(const Vec3& other) {
+    float _x = x/other.x;
+    float _y = y/other.y;
+    float _z = z/other.z;
+    return Vec3(_x, _y, _z);
+}
+
 
 
 AMD::Vec3 Vec3::operator-(const Vec3& other) const{

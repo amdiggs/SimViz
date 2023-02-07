@@ -27,15 +27,21 @@
 #include "Atomic.hpp"
 
 
-const char* test_file = "/Users/diggs/Desktop/TOPCon/OUT-FILES/out-nuc-1-14-23-2/nuc-1.36.dump";
+const char* test_file = "/Users/diggs/Desktop/SimViz/SimViz/Other/small-test.dump";
 extern int num_lines;
 
 void JUNK(Simulation& sim){
     
-    Renderer rend;
+        
     
+}
+
+int main(void)
+{
+    Simulation test;
+    
+    Renderer rend;
     Atom_Mesh at;
-    at.Add_Instance_Layout(sim);
     
     
     Operator op;
@@ -44,26 +50,19 @@ void JUNK(Simulation& sim){
     UI_Window ui(0.0,0.0,rend.get_window());
     while (!rend.is_open()) {
         rend.clear(ui);
-        at.Set_OPs(op, l_src, 1);
-        at.Set_OPs(op, l_src, 2);
-        at.Draw();
         
         ui.NewFrame();
-        ui.Model_UI(op, l_src);
-        ui.log_window(op.M_mat);
-        ui.log_window(op.Proj_mat);
+        ui.Model_UI(op, l_src, test);
+        //ui.log_window(op.M_mat);
+        //ui.log_window(op.Proj_mat);
         ui.render();
+        if(test.Is_Init()){
+            at.Set_OPs(op, l_src, test);
+            at.Draw();
+        }
         
         rend.poll();
         
     }
-    
-}
-
-int main(void)
-{
-    Simulation test = read_dump(test_file);
-    JUNK(test);
-
     return 0;
 }

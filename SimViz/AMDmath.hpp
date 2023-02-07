@@ -69,6 +69,9 @@ struct Vec3{
     Vec3& operator=(const Vec3& other);
     Vec3 operator*(float scale);
     Vec3 operator/(float div);
+    
+    Vec3 operator*(const Vec3& other);
+    Vec3 operator/(const Vec3& other);
     Vec3 operator+=(const Vec3& other);
     Vec3 operator*=(float scale);
     void Reset();

@@ -15,8 +15,11 @@
 #include "../OutSideResources/imgui_impl_opengl3.h"
 #include "AMDmath.hpp"
 
+#define FILE_TYPE_ERROR "You must select either\n a *.dump or *.dat file type!"
+
 class Operator;
 class Light_Src;
+class Simulation;
 
 ImGuiIO& init_io();
 
@@ -78,15 +81,17 @@ private:
     int display_w, display_h;
     float  ui_x, ui_y;
     const char* m_version = "#version 150";
+    std::string m_path = "/Users/diggs/Desktop";
  
     float projection[4] = {1.0, -3.0, 3.0, 3.0};
+    ImGuiTreeNodeFlags m_base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
     
 public:
     UI_Window(float pos_x, float pos_y,GLFWwindow* window);
     ~UI_Window();
     
     float view_x, view_y;
-    void Model_UI(Operator& op, Light_Src& light_src );
+    void Model_UI(Operator& op, Light_Src& light_src,Simulation& sim );
     void Light_UI(Light_Src& light_src);
     void render() const;
     void NewFrame() const;
@@ -103,6 +108,12 @@ public:
     void log_window( AMD::Mat4 mat);
     void log_window(int neb[][2], int num);
     void Write_Buffer(std::string file_name);
+    
+    void Menu_Bar();
+    void List_Dir(std::string path, int& idx, int& selected, std::string& file);
+    std::string Select_File(bool& load);
+    
+    void Warning(std::string);
     
     
 };

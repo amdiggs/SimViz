@@ -11,6 +11,11 @@
 #include "vertexbuffer.hpp"
 #include "vertexarray.hpp"
 #include "Object.hpp"
+#include <filesystem>
+#include "FileIO.hpp"
+#include "Atomic.hpp"
+
+namespace fs = std::filesystem;
 
 bool save = false;
 
@@ -37,8 +42,6 @@ UI_Window::UI_Window(float pos_x, float pos_y, GLFWwindow* window)
     m_cc[3] = 0.0;
     
     (void)m_io;
-    //m_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-    //m_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     m_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     m_io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     ImGui::StyleColorsDark();
@@ -52,7 +55,7 @@ UI_Window::UI_Window(float pos_x, float pos_y, GLFWwindow* window)
     ImGui_ImplOpenGL3_Init(m_version);
     
     
-    ImFont* font = m_io.Fonts -> AddFontFromFileTTF("/System/Library/Fonts/Helvetica.ttc", 16.0);
+    ImFont* font = m_io.Fonts -> AddFontFromFileTTF("/System/Library/Fonts/Optima.ttc", 20.0);
     IM_ASSERT(font != NULL);
     glfwGetFramebufferSize(m_window, &display_w, &display_h);
     view_x = 0.0;
@@ -94,22 +97,61 @@ void UI_Window::render() const{
 }
 
 
+void UI_Window::Warning(std::string message){
+    ImGui::OpenPopup("Desktop");
+    
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(300, 300));
+    if (ImGui::BeginPopupModal("Desktop", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("%s", message.c_str());
 
+        if (ImGui::Button("OK", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::EndPopup();
+    }
+    
+}
 
-void UI_Window::Model_UI(Operator& op, Light_Src& light_src ){
+void UI_Window::Model_UI(Operator& op, Light_Src& light_src, Simulation& sim ){
     static AMD::Vec3 trans;
+    static bool load;
+    static std::string atom_file = "";
     const ImGuiKey m_keys[4] ={ImGuiKey_UpArrow, ImGuiKey_DownArrow, ImGuiKey_RightArrow, ImGuiKey_LeftArrow};
     
-    //ImGui::SetNextWindowPos(ImVec2(0.0, 0.0));
-
-
-    ImGui::Begin("UI prarmeters");
-    //####These are the functions that act on the Operator!!##################################
- 
-    //ImGui::Text("display w = %d, h = %d", 100, 100);// Edit 1 float using a slider from 0.0f to 1.0f
     
 
-    //Projection operations
+
+    ImGui::Begin("UI prarmeters", (bool*)0, ImGuiWindowFlags_MenuBar);
+    if(ImGui::BeginMenuBar()){
+        if (ImGui::BeginMenu("Main"))
+        {
+            ImGui::MenuItem("Load File", NULL, &load);
+            ImGui::MenuItem("Save Image", NULL, &save);
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+    if (load) {
+        atom_file = Select_File(load);
+    
+        if(!atom_file.empty()){
+            ImGui::Text("%s",atom_file.c_str());
+            if(match_atom_file(atom_file)){
+                sim.Init_Sim(atom_file);
+            
+            }
+            else{
+                Warning(FILE_TYPE_ERROR);
+                atom_file = "";
+            }
+        }
+    }
+    //####These are the functions that act on the Operator!!##################################
+ 
     ImGui::InputFloat("Near",&op.get_proj_vec()[2] , 0.1f, 1.0f, "%.1f");
     ImGui::InputFloat("Far", &op.get_proj_vec()[3], 0.1f, 1.0f, "%.1f");
     ImGui::InputFloat("X Lim", &op.get_proj_vec()[0], 0.1f, 1.0f, "%.1f");
@@ -213,16 +255,6 @@ void UI_Window::Model_UI(Operator& op, Light_Src& light_src ){
    
     
     
-    
-
-
-    
-    
-        if (ImGui::Button("SAVE")){
-            save = true;
-        }
-    
-
     static float theta = 0.0;
     static float phi = 0.0;
     AMD::Vec3 light = light_src.get_light_src();
@@ -250,12 +282,98 @@ void UI_Window::Model_UI(Operator& op, Light_Src& light_src ){
     
     ImGui::InputFloat("Color Saturation", light_src.get_src_ptr(), 0.01f, 1.0f, "%.2f");
     
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Timestep");
+    ImGui::SameLine();
+    
+    ImGui::PushID(0);
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(3.0 / 7.0f, 0.6f, 0.6f));
+    float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+    if (ImGui::ArrowButton("##left", ImGuiDir_Left)) {sim.Update_Sim('r');}
+    ImGui::PopStyleColor(1);
+    ImGui::PopID();
+    
+    ImGui::SameLine(0.0f, spacing);
+    
+    ImGui::PushID(1);
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(3.0 / 7.0f, 0.6f, 0.6f));
+    if (ImGui::ArrowButton("##right", ImGuiDir_Right)) { sim.Update_Sim('f'); }
+    ImGui::PopStyleColor(1);
+    ImGui::PopID();
+    ImGui::SameLine();
+    ImGui::Text(" %d",sim.Get_Timestep());
 
     
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 }
 
+void UI_Window::List_Dir(std::string path, int& idx, int& selected, std::string& file){
+    for (const auto & entry : fs::directory_iterator(path))
+    {
+        std::string name = entry.path().filename();
+        ImGuiTreeNodeFlags node_flags = m_base_flags;
+        if(selected == idx){
+            node_flags |= ImGuiTreeNodeFlags_Selected;
+        }
+        if (fs::is_directory(fs::status(entry.path())))
+        {
+            bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)idx, node_flags, "%s", name.c_str());
+            if (node_open)
+            {
+                List_Dir(entry.path(), idx, selected, file);
+                ImGui::TreePop();
+            }
+           
+        }
+        else if (fs::is_regular_file(fs::status(entry.path())) && name[0] != '.')
+        {
+            node_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+            ImGui::TreeNodeEx((void*)(intptr_t)idx, node_flags, "%s", name.c_str());
+            if (ImGui::IsItemClicked()){
+                selected = idx;
+                file = entry.path();
+            }
+        }
+        idx++;
+    }
+    return;
+}
+
+std::string UI_Window::Select_File(bool& load) {
+    std::string curr_path = m_path;
+    
+    ImGui::OpenPopup("Desktop");
+    
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(550, 680));
+    static int selected = -1;
+    static int idx = 0;
+    static std::string file_name("");
+    if (ImGui::BeginPopupModal("Desktop", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("%s", file_name.c_str());
+        List_Dir(curr_path, idx, selected, file_name);
+
+        if (ImGui::Button("open", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            load = false;
+            return file_name;
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+            load = false;
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::Text("idx = %d", idx);
+    idx=0;
+    return "";
+}
 
 
 void UI_Window::Light_UI(Light_Src& light_src){
@@ -291,116 +409,6 @@ void UI_Window::Light_UI(Light_Src& light_src){
 }
 
 
-
-/*
-void UI_Window::log_window(Ensamble_Of_Atoms& ats){
- 
-    AMD::Vec3 at1;
-    AMD::Vec3 at2;
-    AMD::Vec3 diff;
-    int a, b;
-    int na, nb;
-    if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Hideable))
-    {
-        //ImGui::BeginTable("table1", 3, ImGuiTableFlags_Hideable);
-        // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row with a header in each column.
-        // (Later we will show how TableSetupColumn() has other uses, optional flags, sizing weight etc.)
-        ImGui::TableSetupColumn("Atom1");
-        ImGui::TableSetupColumn("Atom2");
-        ImGui::TableSetupColumn("diff");
-        ImGui::TableHeadersRow();
-        for (int row = 0; row < ats.num_bonds; row++)
-        {
-            a = ats.neb_IDs[row][0]; b = ats.neb_IDs[row][1];
-            ImGui::TableNextRow();
-            at1 = ats.m_ats[a].get_coords(); at2 = ats.m_ats[b].get_coords();
-            na = ats.m_ats[a].m_num; nb = ats.m_ats[b].m_num;
-            diff = at1 - at2;
-            
-            if(diff.len() > 2.5){
-
-            ImGui::TableNextColumn();
-            ImGui::Text(" [%d] %.2f,%.2f, %.2f",a,at1[0],at1[1],at1[2]);
-            
-            ImGui::TableNextColumn();
-            ImGui::Text(" [%d] %.2f,%.2f, %.2f",b,at2[0],at2[1],at2[2]);
-            
-            ImGui::TableNextColumn();
-            ImGui::Text("%.2f,%.2f, %.2f : %.2f",diff[0], diff[1], diff[2], diff.len());
-            }
-            else{continue;}
-            
-        }
-        ImGui::EndTable();
-
-    }
-    
-}
-
-
-void UI_Window::log_window(Bond* bd, int num){
- 
-    if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_Hideable))
-    {
-        //ImGui::BeginTable("table1", 3, ImGuiTableFlags_Hideable);
-        // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row with a header in each column.
-        // (Later we will show how TableSetupColumn() has other uses, optional flags, sizing weight etc.)
-        ImGui::TableSetupColumn("Angles");
-        ImGui::TableSetupColumn("Off Set");
-        ImGui::TableHeadersRow();
-        for (int row = 0; row < num; row++)
-        {
-            AMD::Vec3 temp1 = bd[row].get_angles();
-            AMD::Vec3 temp2 = bd[row].get_off_set();
-            ImGui::TableNextRow();
-            
-
-            ImGui::TableNextColumn();
-            ImGui::Text("%.2f,%.2f, %.2f",temp1.x, temp1.y,temp1.z);
-            
-            ImGui::TableNextColumn();
-            ImGui::Text("%.2f,%.2f, %.2f",temp2.x, temp2.y,temp2.z);
-            
-        }
-        ImGui::EndTable();
-    }
-}
-
-void UI_Window::log_window( AMD::Vertex* verts, int num){
-    
-    if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Hideable))
-    {
-        //ImGui::BeginTable("table1", 3, ImGuiTableFlags_Hideable);
-        // Submit columns name with TableSetupColumn() and call TableHeadersRow() to create a row with a header in each column.
-        // (Later we will show how TableSetupColumn() has other uses, optional flags, sizing weight etc.)
-        ImGui::TableSetupColumn("Coords");
-        ImGui::TableSetupColumn("Color");
-        ImGui::TableSetupColumn("Normal");
-        ImGui::TableSetupColumn("Text Coords");
-        ImGui::TableHeadersRow();
-        for (int row = 0; row < num; row++)
-        {
-            ImGui::TableNextRow();
-            
-
-            ImGui::TableNextColumn();
-            ImGui::Text("%.2f,%.2f, %.2f",verts[row].pos.x,verts[row].pos.y,verts[row].pos.z);
-            
-            ImGui::TableNextColumn();
-            ImGui::Text("%.2f,%.2f, %.2f, %.2f",verts[row].clr.r,verts[row].clr.g,verts[row].clr.b, verts[row].clr.a);
-            
-            ImGui::TableNextColumn();
-            ImGui::Text("%.2f,%.2f, %.2f",verts[row].norm.x,verts[row].norm.y,verts[row].norm.z);
-            
-            ImGui::TableNextColumn();
-            ImGui::Text("%.2f %.2f", verts[row].texture.x,verts[row].texture.y );
-        }
-        ImGui::EndTable();
-    }
-}
-
-
-*/
 void UI_Window::log_window( AMD::Vertex* verts, unsigned int* idx ,int num){
     int a, b, c;
     if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Hideable))

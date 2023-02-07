@@ -11,12 +11,18 @@
 
 
 
-Shader::Shader(std::string file_name){
-    std::string vertexShader = get_sh_str("VERTEX", file_name);
-    std::string geometryShader = get_sh_str("GEOMETRY",file_name);
-    std::string fragmentShader = get_sh_str("FRAGMENT", file_name);
-    CreateShader(vertexShader, geometryShader, fragmentShader);
+Shader::Shader(std::string file_name, bool geom){
     
+    std::string vertexShader = get_sh_str("VERTEX", file_name);
+    std::string fragmentShader = get_sh_str("FRAGMENT", file_name);
+    if(geom){
+        std::string geometryShader = get_sh_str("GEOMETRY",file_name);
+        CreateShader(vertexShader, geometryShader, fragmentShader);
+    }
+    
+    else{
+        CreateShader(vertexShader, fragmentShader);
+    }
 
     MV_loc = UniformLoc("u_MV");
     MVP_loc = UniformLoc("u_MVP");
@@ -72,6 +78,25 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
     
     
 }
+
+void Shader::CreateShader(const std::string& vertexShader, const std::string& fragmentShader){
+    m_ID = glCreateProgram();
+    unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
+    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
+    
+    glAttachShader(m_ID, vs);
+    glAttachShader(m_ID, fs);
+    glLinkProgram(m_ID);
+    glValidateProgram(m_ID);
+    
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    
+    return;
+    
+    
+}
+
 void Shader::CreateShader(const std::string& vertexShader,const std::string& geometryShader, const std::string& fragmentShader){
     m_ID = glCreateProgram();
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
@@ -92,6 +117,8 @@ void Shader::CreateShader(const std::string& vertexShader,const std::string& geo
     
     
 }
+
+
 
 
 int Shader::UniformLoc(const char* name) const{
@@ -210,7 +237,7 @@ void Shader::Set_Value(char type, const float& f) const {
     glUniform1f(sat_loc,f);
 }
 
-void Shader::Set_Uniform(const char *name, const AMD::Vec3 *vec) const {
+void Shader::Set_Uniform3fv(const char *name, const AMD::Vec3 *vec) const {
     int loc = UniformLoc(name);
     glUniform3fv(loc,1,(float*)vec);
 }

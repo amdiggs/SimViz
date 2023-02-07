@@ -27,7 +27,7 @@ unsigned int VertexArray::AddBuffer( const void* off_set,unsigned int size, int 
     int num_comp = size/sizeof(float);
     glGenBuffers(1, &testVBO);
     glBindBuffer(GL_ARRAY_BUFFER, testVBO);
-    glBufferData(GL_ARRAY_BUFFER, num*size, (void*)off_set, GL_STATIC_DRAW);
+    std::cout << count << std::endl;
     glEnableVertexAttribArray(count);
     glVertexAttribPointer(count, num_comp, GL_FLOAT, GL_FALSE, size, (void*)0);
     glVertexAttribDivisor(count,1);
