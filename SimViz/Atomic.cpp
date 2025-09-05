@@ -7,17 +7,42 @@
 
 #include "Atomic.hpp"
 #include "FileIO.hpp"
-#include "Shapes.hpp"
-#include "Object.hpp"
-#include <thread>
-#include <chrono>
+#include "AtomInfo.h"
+#include "OGL/Meshes.hpp"
+Simulation* Sim = Simulation::Get();
 
-int num_atoms;
-AMD::Vec3 sim_box;
+float Boundary_Wrapped_Dist(AMD::Vec3 A, AMD::Vec3 B){
+    AMD::Vec3 box = Sim->Sim_Box();
+    float dist_sq = 0.0;
+    for (int i = 0; i< 3; i++){
+        float delta = abs(A[i]-B[i]);
+        if(delta > 0.5*box[i]){
+            float x1 = (A[i] < B[i]) ? A[i] : B[i];
+            float x2 = (A[i] < B[i]) ? B[i] : A[i];
+            dist_sq += ((x1 + box[i]) - x2) * ((x1 + box[i]) - x2);
+        }
+        else{dist_sq += delta * delta;}
+    }
+    
+    return sqrt(dist_sq);
+}
+
+float Dist(AMD::Vec3 A, AMD::Vec3 B){
+    float dx = A.x - B.x;
+    float dy = A.y - B.y;
+    float dz = A.z - B.z;
+    float dist_sq = dx*dx + dy*dy + dz*dz;
+    
+    return sqrt(dist_sq);
+}
+
+
 
 Atom::Atom()
-: m_coords(AMD::Vec3()), m_type(0), m_num_neighbors(0)
-{}
+: m_id(10000000), m_type(0), m_coords(0.0,0.0,0.0), m_num_neighbors(0)
+{
+    m_neighbors = (Atom**)malloc(MAX_NEIGHBORS*sizeof(Atom*));
+}
 
 Atom::Atom(std::string line)
 :m_num_neighbors(0)
@@ -28,51 +53,181 @@ Atom::Atom(std::string line)
     ss << line;
     ss >> m_id >> m_type >> x >> y >> z;
     m_coords = AMD::Vec3(x,y,z);
+    m_neighbors = (Atom**)malloc(MAX_NEIGHBORS*sizeof(Atom*));
     
 }
 
 Atom::Atom(int _id, int _type, float x, float y, float z)
-:m_id(_id), m_type(_type),m_coords(x, y, z)
-{}
+:m_id(_id), m_type(_type),m_coords(x, y, z), m_num_neighbors(0)
+{
+    m_neighbors = (Atom**)malloc(MAX_NEIGHBORS*sizeof(Atom*));
+}
 
-Atom::~Atom() { 
-    //free(m_neighbors);
+Atom& Atom::operator=(const Atom& other){
+    if(this == &other){return *this;}
+    
+    this->m_id = other.m_id;
+    this->m_type = other.m_type;
+    this->m_coords = other.m_coords;
+    this->m_num_neighbors = other.m_num_neighbors;
+    
+    this->m_neighbors[0] = other.m_neighbors[0];
+    this->m_neighbors[1] = other.m_neighbors[1];
+    this->m_neighbors[2] = other.m_neighbors[2];
+    this->m_neighbors[3] = other.m_neighbors[3];
+    this->m_neighbors[4] = other.m_neighbors[4];
+    
+    return *this;
 }
 
 
-AMD::Vec3& Atom::get_coords(){
+Atom::~Atom() {
+    free(m_neighbors);
+}
+
+
+AMD::Vec3& Atom::Get_Coords(){
     return this -> m_coords;
 }
-unsigned int Atom::get_type() const{
+unsigned int Atom::Get_Type() const{
     return m_type;
 }
 
-unsigned int Atom::get_id() const{
+unsigned int Atom::Get_ID() const{
     return m_id;
 }
 
-void Atom::Rescale(){
-    m_coords.x *= sim_box.x;
-    m_coords.y *= sim_box.y;
-    m_coords.z *= sim_box.z;
+
+unsigned int Atom::Get_Num_Neighbors() const{
+    return m_num_neighbors;
 }
+
+Atom** Atom::Get_Neighbors(){
+    return this->m_neighbors;
+}
+
+
+void Atom::Set_Coords(float x, float y, float z){
+    this->m_coords.x = x;
+    this->m_coords.y = y;
+    this->m_coords.z = z;
+}
+
+
+void Atom::Set_Vals(Atom_Line& line){
+    m_id = line.id;
+    m_type = line.type;
+    m_coords = line.coords;
+    Shift();
+    Clear_Neighbors();
+}
+
+void Atom::Set_Type(int t){
+    m_type = t;
+}
+
+void Atom::Clear_Neighbors(){
+    for (int i = 0; i< m_num_neighbors; i++){
+        m_neighbors[i] = 0;
+    }
+    m_num_neighbors = 0;
+}
+
+void Atom::Push_Neighbor(Atom& neb){
+    if (m_num_neighbors == MAX_NEIGHBORS){
+        std::cout << "Exceeded Max Number of Neighbors!!!\n";
+        Print_Neighbors();
+        exit(-5);
+    }
+    this->m_neighbors[m_num_neighbors] = &neb;
+    m_num_neighbors ++;
+}
+
+
+void Atom::Pop_Neighbor(Atom& neb){
+    
+}
+
+void Atom::Shift(){
+    AMD::Vec3 Box = Sim->Sim_Box();
+    AMD::Vec3 shift = Sim->shift;
+    float sx = Box.x * shift.x;
+    
+    if(m_coords.x >= sx){
+        m_coords.x -= sx;
+    }
+    else{
+        m_coords.x += (1.0 - shift.x)*Box.x;
+    }
+    
+    float sy = Box.y * shift.y;
+    
+    if(m_coords.y >= sy){
+        m_coords.y -= sy;
+    }
+    else{
+        m_coords.y += (1.0 - shift.y)*Box.y;
+    }
+    
+    
+    float sz = Box.z * shift.z;
+    
+    if(m_coords.z >= sz){
+        m_coords.z -= sz;
+    }
+    else{
+        m_coords.z += (1.0 - shift.z)*Box.z;
+    }
+}
+
 
 void Atom::Print(){
     std::cout << m_id << " " << m_type
     << " " << m_coords.x << " " << m_coords.y << " " << m_coords.z << std::endl;
 }
 
-//Bond class#####################
+
+void Atom::Print_Neighbors(){
+    Print();
+    for(int i = 0; i<m_num_neighbors; i++){
+        m_neighbors[i] -> Print();
+        std::cout << Boundary_Wrapped_Dist(this->Get_Coords(), m_neighbors[i]->Get_Coords()) << std::endl;
+    }
+    
+}
+
+CL_Atom::CL_Atom()
+{
+    m_type = 0;
+    m_id = 0;
+    m_coords.x = 0.0;
+    m_coords.y = 0.0;
+    m_coords.z = 0.0;
+}
+
+CL_Atom::CL_Atom(const Atom& at)
+{
+    m_type = at.Get_Type();
+    m_id = at.Get_ID();
+    m_coords.x = at.m_coords.x;
+    m_coords.y = at.m_coords.y;
+    m_coords.z = at.m_coords.z;
+}
+
+
+
+
+//###################Bond class#####################
 
 Bond::Bond(){}
 
 Bond::Bond(Atom& A,Atom& B)
 {
-    m_start = A.get_coords();
-    m_end = B.get_coords();
+    m_start = A.Get_Coords();
+    m_end = B.Get_Coords();
     m_vec = m_end - m_start;
-    m_types.x = A.get_type();
-    m_types.y = B.get_type();
+    m_types.x = A.Get_Type();
+    m_types.y = B.Get_Type();
     Set_Len();
     Set_Theta();
     Set_Phi();
@@ -133,47 +288,198 @@ void Bond::Set_Len() {
 
 
 
-Simulation::Simulation()
-:curr_line(0), num_lines(0), init(false) {}
 
-Simulation::Simulation(const char* file)
-:curr_line(0), num_lines(0), init(false)
-{
-    m_data = Read_File(file, num_lines, block_len);
-    Update_Sim('f');
+Dump::Dump()
+:init(false), dump_num_atoms(0), scale(1.0,1.0,1.0)
+{}
+
+Dump::~Dump(){
+    if(init){
+        free(Atom_Lines);
+    }
+}
+
+
+void Dump::Set_Params(std::string line){
+    std::stringstream ss;
+    ss << line;
+    std::string out;
+    while(ss >> out){
+        if(out.compare("id") == 0){has_id = true;}
+        if(out.compare("xs") == 0){scale.x = sim_box[0][0];}
+        if(out.compare("ys") == 0){scale.y = sim_box[1][1];}
+        if(out.compare("zs") == 0){scale.z = sim_box[2][2];}
+    }
+}
+
+void Dump::Init(std::ifstream& file_stream, size_t& pos){
+    std::string line;
+    std::stringstream ss;
+    file_stream.seekg(pos);
+    std::getline(file_stream, line);
+    
+    
+    float lo = 0.0;float hi = 0.0;
+    
+    if(!match_TS(line.c_str())){
+        printf("First Line did not match TIMESTEP:\n");
+        exit(3);
+    }
+    else{
+        std::getline(file_stream, line);
+        timestep = get_int(line);
+    }
+    while(std::getline(file_stream, line)){
+        if(match_TS(line.c_str())){
+            pos = file_stream.tellg();
+            pos -= line.length() + 1;
+            file_stream.seekg(pos);
+            break;
+        }
+        
+        else if(match_Num_Atoms(line.c_str())){
+            std::getline(file_stream, line);
+            dump_num_atoms = get_int(line);
+        }
+        
+        else if(match_Box_Bounds(line.c_str())){
+            for(int i = 0; i< 3; i ++){
+                std::getline(file_stream, line);
+                ss << line;
+                ss >> lo >> hi;
+                sim_box[i][i] = hi - lo;
+                ss.str("");
+                ss.clear();
+                }
+            
+        }// end of box else if
+        
+        else if(match_Atom_Line(line.c_str())){
+            int id;
+            int type;
+            std::string str_type;
+            float x,y,z;
+            Set_Params(line);
+            Atom_Lines = (Atom_Line*)malloc(dump_num_atoms*sizeof(Atom_Line));
+            std::stringstream ss;
+            for(int i = 0; i< dump_num_atoms; i ++){
+                std::getline(file_stream, line);
+                ss << line;
+                if(has_id){
+                    ss >> id >> str_type >> x >> y >> z;
+                }
+                else{
+                    id=0;
+                    ss >> str_type >> x >> y >> z;
+                }
+                if(match_int(str_type)){type = atoi(str_type.c_str());}
+                else{
+                    char t = str_type[0];
+                    switch (t) {
+                        case 83:
+                            type = 1;
+                            break;
+                            
+                        case 72:
+                            type = 3;
+                            break;
+                            
+                        case 66:
+                            type = 3;
+                            break;
+                            
+                        case 73:
+                            type = 1;
+                            break;
+                            
+                        case 79:
+                            type = 2;
+                            break;
+                            
+                        default:
+                            type = 0;
+                            break;
+                    }
+                }
+                Atom_Lines[i] = Atom_Line(id,type,AMD::Vec3(x*scale.x,y*scale.y,z*scale.z));
+                ss.clear();
+                }
+            
+        } // end of atom line else if
+      
+    }// end of while loop
+    
     init = true;
     
 }
+
+
+
+
+Simulation::Simulation()
+:m_num_blocks(0), m_curr_block(0),m_num_atoms(0), m_init(false), shift(0.0,0.0,0.0) {}
 
 
 
 
 Simulation::~Simulation()
 {
-    for (int i = 0; i < num_lines; i++){
-        free(m_data[i]);
+    for (int i = 0; i< m_num_blocks; i++){
+        m_data[i].~Dump();
     }
     free(m_data);
 }
 
 
-void Simulation::Init_Sim(std::string file){
+Simulation Simulation::inst;
+
+Simulation* Simulation::Get(){
+    return &inst;
+}
+
+
+
+
+
+
+void Simulation::Init(const char* file){
     
-    m_data = Read_File(file.c_str(), num_lines, block_len);
-    Update_Sim('f');
-    init = true;
+    size_t pos = 0;
+    std::ifstream infile(file, std::ios_base::in);
+    if (!infile.is_open()){
+        std::cout << "File did not open!!" << std::endl;
+        exit(9);
+    }
+    
+    int count = 0;
+    while (!infile.eof()) {
+        m_num_blocks ++;
+        m_data = (Dump*)realloc(m_data, m_num_blocks*sizeof(Dump));
+        m_data[count] = Dump();
+        m_data[count].Init(infile, pos);
+        count++;
+    }
+    Set_Block(0);
+    m_bonds = (AMD::Vec3*)malloc(6*m_num_atoms*sizeof(AMD::Vec3));
+    Compute_Neighbors();
+    Check_Nebs();
+    m_init = true;
     
 }
-void Simulation::Set_Neighbors() { 
+void Simulation::Compute_Neighbors() { 
     float cut;
     int num_nebs;
     int count = 0;
-    AMD::Vec3 diff;
-    for (int i = 0; i< num_atoms; i++){
+    float dist;
+    for (int i = 0; i< m_num_atoms; i++){
+        AMD::Vec3 A = atoms[i].Get_Coords();
         num_nebs =0;
-        for (int j = i+1; j< num_atoms; j++){
-            diff = this->atoms[i].get_coords() - this->atoms[j].get_coords();
-            switch (atoms[i].get_type() + atoms[j].get_type()) {
+        if(A.x > 10000.0){continue;}
+        for (int j = i+1; j< m_num_atoms; j++){
+            AMD::Vec3 B = atoms[j].Get_Coords();
+            if(B.x > 10000.0){continue;}
+            dist = Dist(A, B);
+            switch (atoms[i].Get_Type() + atoms[j].Get_Type()) {
                 case 2:
                     cut = cutoffs[0];
                     break;
@@ -185,125 +491,159 @@ void Simulation::Set_Neighbors() {
                 case 4:
                     cut = cutoffs[2];
                     break;
+                case 5:
+                    cut = 1.6;
+                    break;
+                    
+                case 6:
+                    cut = 2.3;
+                    break;
                     
                 default:
                     cut = 0.0;
                     break;
             }
             
-            if(diff.len() <= cut){
-                neighbor_IDs[count][0] = i; neighbor_IDs[count][1] = j;
+            if(dist <= cut){
+                m_bonds[count] = A;
                 count++;
-                num_nebs++;
+                m_bonds[count] = B;
+                count++;
+                atoms[i].Push_Neighbor(atoms[j]);
+                atoms[j].Push_Neighbor(atoms[i]);
             }
         
         }
     }
-    this -> num_bonds = count;
+    this -> m_num_bonds = count;
 }
 
 
 
-void Simulation::Set_Block(int start){
-    if(start + block_len > num_lines){
-        return;
-        
+void Simulation::Check_Nebs()
+{
+    for(int i = 0; i<m_num_atoms; i++){
+        int num = atoms[i].Get_Num_Neighbors();
+        if(num < 1){atoms[i].Print();}
     }
-    std::stringstream ss;
-    m_timestep = atoi(m_data[start + 1]);
-    num_atoms = atoi(m_data[start + 3]);
-    int count = 0;
-    AMD::Vec3 BB;
-    float lo, hi;
-    for(int i = start + 5; i< start + 8; i++){
-        ss << m_data[i];
-        ss >> lo >> hi;
-        sim_box[count][0] = lo;
-        sim_box[count][1] = hi;
-        BB[count] = hi - lo;
-        count++;
-        ss.str(std::string());
-        ss.clear();
-        
+}
+
+void Simulation::Set_Block(int block){
+    if(block > m_num_blocks-1){
+        block = 0;
     }
-    count = 0;
-    int _id, _type;
-    float xs,ys,zs;
-    for (int i = start + 9; i< start + block_len; i++){
-        ss << m_data[i];
-        ss >> _id >> _type >> xs >> ys >> zs;
-        atoms[_id - 1] = Atom(_id, _type, xs*BB.x, ys*BB.y, zs*BB.z);
-        count++;
-        ss.str(std::string());
-        ss.clear();
+    else if (block < 0){
+        block = m_num_blocks - 1;
     }
-    this -> curr_line = start + block_len;
+    
+    m_timestep = m_data[block].timestep;
+    m_num_atoms = m_data[block].dump_num_atoms;
+    
+    for (int i = 0; i< 3; i++){
+        m_lattice[i] = m_data[block].sim_box[i];
+    }
+    
+    
+    
+    for (int i = 0; i< m_num_atoms; i++){
+        atoms[i].Set_Vals(m_data[block].Atom_Lines[i]);
+    }
+    
+    m_curr_block = block;
 }
 
 
 void Simulation::Update_Sim(char dir){
     switch (dir) {
         case 'f':
-            Set_Block(curr_line);
+            Set_Block(m_curr_block + 1);
             break;
             
         case 'r':
-            Set_Block(curr_line - 2*block_len);
+            Set_Block(m_curr_block - 1);
             
+        case 'n':
+            Set_Block(m_curr_block);
+        
         default:
             break;
     }
-    Set_Neighbors();
+    Compute_Neighbors();
+    m_need_update = true;
 }
 
 
 
 bool Simulation::Is_Init(){
-    return init;
+    return m_init;
 }
 
-int Simulation::Get_Timestep(){
+int Simulation::Timestep(){
     return m_timestep;
 }
 
-float **Simulation::Compute_Histogram() {
-    int na = this-> num_atoms;
-    int numx = ceil(this -> sim_box[0][1]);
-    int numy = ceil(this -> sim_box[1][1]);
-    
-    AMD::Vec3 tmp;
-    float** hist = (float**)malloc(numx*numy*sizeof(float*));
-    for(int i = 0; i< numx*numy; i++){
-        hist[i] = (float*)malloc(sizeof(float));
-    }
-    for(int i = 0; i< na; i++){
-        tmp = this->atoms[i].get_coords();
-        int idx = (int)tmp.x;
-        int idy = (int)tmp.y;
-    }
-    
-    
-    
-    return (float**)hist;
+
+int Simulation::Num_Atoms(){
+    return this->m_num_atoms;
+}
+
+int Simulation::Num_Bonds(){
+    return this->m_num_bonds;
+}
+
+int Simulation::Num_Blocks(){
+    return this->m_num_blocks;
 }
 
 
-
-
-void Simulation::print(){
-    for (int i = 0; i< block_len; i++){
-        std::cout << m_data[i] << std::endl;
-        std::cout << "=======================================" << std::endl;
-    }
+AMD::Vec3 Simulation::Sim_Box(){
+    float x = m_lattice[0][0];
+    float y = m_lattice[1][1];
+    float z = m_lattice[2][2];
+    return AMD::Vec3(x, y, z);
 }
 
 
+Atom* Simulation::Atoms(){
+    return atoms;
+}
 
+AMD::Vec3* Simulation::Bonds(){return m_bonds;}
 
-
-
-
-
+void Simulation::print(Atom_Attrib attrib){
+    switch (attrib) {
+        case COORDS:
+            for (int i = 0; i< m_num_atoms; i++){
+                atoms[i].Get_Coords().print();
+                std::cout << "=======================================" << std::endl;
+            }
+            break;
+        case TYPE:
+            for (int i = 0; i< m_num_atoms; i++){
+                std::cout << atoms[i].Get_Type() << std::endl;
+                std::cout << "=======================================" << std::endl;
+            }
+            break;
+            
+        case AT_NEIGHBORS:
+            for (int i = 0; i< m_num_atoms; i++){
+                atoms[i].Print_Neighbors();
+                std::cout << "=======================================" << std::endl;
+            }
+            break;
+            
+        case NEIGHBORS:
+            for (int i = 0; i< m_num_bonds; i++){
+                std::cout << neighbor_IDs[i][0] <<" -- " << neighbor_IDs[i][1] << std::endl;
+                std::cout << "=======================================" << std::endl;
+            }
+            break;
+        default:
+            break;
+    }
+    
+    
+}
 
 
 

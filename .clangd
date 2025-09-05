@@ -1,0 +1,10 @@
+CompileFlags:
+  Add:
+    - -std=c++20
+    - -Wall
+    - -I/Users/diggs/Desktop/SimViz/SimViz/Resources
+    - -I/Users/diggs/Desktop/SimViz/SimViz/Rendering
+    - -I/Users/diggs/Desktop/SimViz/SimViz/Math
+    - -I/Users/diggs/Desktop/SimViz/SimViz/SimViz
+    - -I/opt/homebrew/include
+
