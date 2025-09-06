@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #include <cstdlib>
-#include "OGL/AMDmath.hpp"
+#include "AMDmath.hpp"
 
 class Atom;
 class Hist_2D_Bar_Mesh;

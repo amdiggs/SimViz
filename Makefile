@@ -11,7 +11,7 @@
 CXX = clang++
 CXXFLAGS = -glldb -Wall -std=c++17
 
-TARGET = SimViz
+TARGET = sim_viz
 SOURCE_DIR = .
 SOURCES = $(shell find $(SOURCE_DIR) -name '*.cpp')
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
@@ -19,11 +19,9 @@ UNAME_S := $(shell uname -s)
 LINUX_GL_LIBS = -lGL
 
 #local Libs
-INC_PATHS = ./Math ./Resources ./Rendering ./SimViz ./SimViz/MyOpenCL
-LIB_PATHS = \
-	./Resources/imgui/examples/libs/glfw/lib-vc2010-64 \
-	./Resources/imgui/examples/libs/glfw/lib-vc2010-32 \
-	./Math
+INC_PATHS = ../Math ./Resources ./Rendering ./SimViz ./SimViz/MyOpenCL
+INC_PATHS += /opt/homebrew/Cellar/freetype/2.13.3/include/freetype2
+LIB_PATHS = ../Math
 LDFLAGS = $(addprefix -L,$(LIB_PATHS))
 LIBS = -lAMDmath
 
@@ -38,7 +36,7 @@ endif
 ifeq ($(UNAME_S), Darwin) #APPLE
 	ECHO_MESSAGE = "Mac OS X"
 	LIBS += -framework OpenGL -framework OpenCL
-	LDFLAGS += -L/usr/local/lib -L/opt/local/lib -L/opt/homebrew/lib
+	LDFLAGS += -L/usr/local/lib -L/opt/homebrew/lib
 	LIBS += -lglfw -lGLEW -lfreetype
 
 	INC_PATHS += /usr/local/include /opt/local/include /opt/homebrew/include
@@ -66,7 +64,7 @@ CFLAGS = $(CXXFLAGS)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 all: $(TARGET)
-	+$(MAKE) -C ./Math
+	@echo Built Objects
 $(TARGET): $(OBJS)
 	@echo "$(ECHO_MESSAGE)"
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SOURCES) $(LDFLAGS) $(LIBS)

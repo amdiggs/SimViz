@@ -8,7 +8,7 @@
 #include "Atomic.hpp"
 #include "FileIO.hpp"
 #include "AtomInfo.h"
-#include "OGL/Meshes.hpp"
+#include "Meshes.hpp"
 Simulation* Sim = Simulation::Get();
 
 float Boundary_Wrapped_Dist(AMD::Vec3 A, AMD::Vec3 B){
@@ -200,18 +200,18 @@ CL_Atom::CL_Atom()
 {
     m_type = 0;
     m_id = 0;
-    m_coords.x = 0.0;
-    m_coords.y = 0.0;
-    m_coords.z = 0.0;
+    m_coords.s[0] = 0.0;
+    m_coords.s[1] = 0.0;
+    m_coords.s[2] = 0.0;
 }
 
 CL_Atom::CL_Atom(const Atom& at)
 {
     m_type = at.Get_Type();
     m_id = at.Get_ID();
-    m_coords.x = at.m_coords.x;
-    m_coords.y = at.m_coords.y;
-    m_coords.z = at.m_coords.z;
+    m_coords.s[0] = at.m_coords.x;
+    m_coords.s[1] = at.m_coords.y;
+    m_coords.s[2] = at.m_coords.z;
 }
 
 

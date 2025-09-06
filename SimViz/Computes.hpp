@@ -12,7 +12,7 @@
 #include <cstdlib>
 #include <string>
 #include <fstream>
-#include "OGL/AMDmath.hpp"
+#include "AMDmath.hpp"
 
 class Atom;
 class Iso_Mesh;

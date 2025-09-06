@@ -8,7 +8,7 @@
 #include "Computes.hpp"
 #include "Atomic.hpp"
 #include "Comp_Kernel.hpp"
-#include "OGL/Meshes.hpp"
+#include "Meshes.hpp"
 #include "FileIO.hpp"
 #include "MyOpenCL/ErrorLogging.h"
 #include "MyOpenCL/OpenCL_Funcs.h"
