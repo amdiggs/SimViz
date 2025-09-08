@@ -18,6 +18,7 @@
 #include <sstream>
 #include "AMDmath.hpp"
 #include <OpenCL/opencl.h>
+#include "FileIO.hpp"
 
 enum Atom_Attrib{COORDS, NEIGHBORS, TYPE, AT_NEIGHBORS};
 
@@ -25,15 +26,6 @@ class Atom_Mesh;
 class Hist_2D_Grid_Mesh;
 class Atom;
 struct CL_Atom;
-
-
-struct Atom_Line{
-    int id;
-    int type;
-    AMD::Vec3 coords;
-    
-    Atom_Line(int e_id, int e_type, AMD::Vec3 e_coords):id(e_id),type(e_type),coords(e_coords){};
-};
 
 
 
@@ -107,25 +99,6 @@ public:
     AMD::Vec2& get_types();
     AMD::Vec2 m_types;
     float get_len();
-    
-};
-
-
-struct Dump
-{
-    int timestep;
-    int dump_num_atoms;
-    AMD::Vec3 sim_box[3];
-    Atom_Line* Atom_Lines;
-    bool init;
-    bool has_id = false;
-    AMD::Vec3 scale;
-    
-    
-    Dump();
-    ~Dump();
-    void Init(std::ifstream& file_stream, size_t& pos);
-    void Set_Params(std::string line);
     
 };
 

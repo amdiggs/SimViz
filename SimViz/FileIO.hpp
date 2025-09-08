@@ -16,6 +16,7 @@
 #include <sstream>
 #include <filesystem>
 #include "AMDmath.hpp"
+//#include "Atomic.hpp"
 #define MAX_WORD 250
 #define MAX_TS 1000
 
@@ -27,6 +28,34 @@
 #define ATOM_LINE2 "ITEM: ATOMS id type x y z"
 #define ATOM_LINE3 "ITEM: ATOMS type x y z"
 
+
+
+struct Atom_Line{
+    int id;
+    int type;
+    AMD::Vec3 coords;
+    
+    Atom_Line(int e_id, int e_type, AMD::Vec3 e_coords):id(e_id),type(e_type),coords(e_coords){};
+};
+
+struct Dump
+{
+    int timestep;
+    int dump_num_atoms;
+    AMD::Vec3 lattice[3];
+    Atom_Line* Atom_Lines;
+    bool init;
+    bool has_id = false;
+    AMD::Vec3 scale;
+    
+    
+    Dump();
+    ~Dump();
+    void Init(std::ifstream& file_stream, size_t& pos);
+    void Set_Params_LAMMPS(std::string line);
+    void Set_Params_JDFTX(std::string line);
+    void Set_Lattice(std::ifstream& file_stream, size_t& pos);
+};
 
 struct Data_2D{
     float** m_dat = NULL;

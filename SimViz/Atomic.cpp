@@ -287,135 +287,6 @@ void Bond::Set_Len() {
 
 
 
-
-
-Dump::Dump()
-:init(false), dump_num_atoms(0), scale(1.0,1.0,1.0)
-{}
-
-Dump::~Dump(){
-    if(init){
-        free(Atom_Lines);
-    }
-}
-
-
-void Dump::Set_Params(std::string line){
-    std::stringstream ss;
-    ss << line;
-    std::string out;
-    while(ss >> out){
-        if(out.compare("id") == 0){has_id = true;}
-        if(out.compare("xs") == 0){scale.x = sim_box[0][0];}
-        if(out.compare("ys") == 0){scale.y = sim_box[1][1];}
-        if(out.compare("zs") == 0){scale.z = sim_box[2][2];}
-    }
-}
-
-void Dump::Init(std::ifstream& file_stream, size_t& pos){
-    std::string line;
-    std::stringstream ss;
-    file_stream.seekg(pos);
-    std::getline(file_stream, line);
-    
-    
-    float lo = 0.0;float hi = 0.0;
-    
-    if(!match_TS(line.c_str())){
-        printf("First Line did not match TIMESTEP:\n");
-        exit(3);
-    }
-    else{
-        std::getline(file_stream, line);
-        timestep = get_int(line);
-    }
-    while(std::getline(file_stream, line)){
-        if(match_TS(line.c_str())){
-            pos = file_stream.tellg();
-            pos -= line.length() + 1;
-            file_stream.seekg(pos);
-            break;
-        }
-        
-        else if(match_Num_Atoms(line.c_str())){
-            std::getline(file_stream, line);
-            dump_num_atoms = get_int(line);
-        }
-        
-        else if(match_Box_Bounds(line.c_str())){
-            for(int i = 0; i< 3; i ++){
-                std::getline(file_stream, line);
-                ss << line;
-                ss >> lo >> hi;
-                sim_box[i][i] = hi - lo;
-                ss.str("");
-                ss.clear();
-                }
-            
-        }// end of box else if
-        
-        else if(match_Atom_Line(line.c_str())){
-            int id;
-            int type;
-            std::string str_type;
-            float x,y,z;
-            Set_Params(line);
-            Atom_Lines = (Atom_Line*)malloc(dump_num_atoms*sizeof(Atom_Line));
-            std::stringstream ss;
-            for(int i = 0; i< dump_num_atoms; i ++){
-                std::getline(file_stream, line);
-                ss << line;
-                if(has_id){
-                    ss >> id >> str_type >> x >> y >> z;
-                }
-                else{
-                    id=0;
-                    ss >> str_type >> x >> y >> z;
-                }
-                if(match_int(str_type)){type = atoi(str_type.c_str());}
-                else{
-                    char t = str_type[0];
-                    switch (t) {
-                        case 83:
-                            type = 1;
-                            break;
-                            
-                        case 72:
-                            type = 3;
-                            break;
-                            
-                        case 66:
-                            type = 3;
-                            break;
-                            
-                        case 73:
-                            type = 1;
-                            break;
-                            
-                        case 79:
-                            type = 2;
-                            break;
-                            
-                        default:
-                            type = 0;
-                            break;
-                    }
-                }
-                Atom_Lines[i] = Atom_Line(id,type,AMD::Vec3(x*scale.x,y*scale.y,z*scale.z));
-                ss.clear();
-                }
-            
-        } // end of atom line else if
-      
-    }// end of while loop
-    
-    init = true;
-    
-}
-
-
-
-
 Simulation::Simulation()
 :m_num_blocks(0), m_curr_block(0),m_num_atoms(0), m_init(false), shift(0.0,0.0,0.0) {}
 
@@ -540,7 +411,7 @@ void Simulation::Set_Block(int block){
     m_num_atoms = m_data[block].dump_num_atoms;
     
     for (int i = 0; i< 3; i++){
-        m_lattice[i] = m_data[block].sim_box[i];
+        m_lattice[i] = m_data[block].lattice[i];
     }
     
     

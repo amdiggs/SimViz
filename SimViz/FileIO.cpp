@@ -6,6 +6,7 @@
 //
 
 #include "FileIO.hpp"
+#include "AMDmath.hpp"
 #include <math.h>
 namespace fs = std::filesystem;
 
@@ -16,6 +17,10 @@ std::string m_exp_float = "[[:digit:]]+\\.[[:digit:]]+e\\+[[:digit:]]+";
 std::string m_comment = "^#.*";
 std::string dump_file = ".dump";
 std::string dat_file = ".dat";
+
+enum Coords_Type {lattice, cartiesian};
+Coords_Type coords_type;
+AMD::Mat3 Scale;
 
 bool match(std::string input, std::string m_type){
     std::regex reg (m_type);
@@ -61,19 +66,28 @@ bool match_Atom_Line3(const char* line){return std::regex_match(line,re_AL3);}
 
 
 
+
 unsigned int Get_Num_El(std::string line){
     bool ws = true;
     unsigned int count = 0;
     for(int i = 0; i < line.size(); i++){
-        if(std::isspace(line[i]) && !ws){
-            ws = true;
+        if(std::isspace(line[i]) && ws){
+            continue;
         }
-        if(ws && !std::isspace(line[i])){
-            ws = false;
+        else if(!ws && !std::isspace(line[i])){
+            continue;
+        }
+        else if(std::isspace(line[i]) && !ws){
+            ws = true;
             count++;
         }
+        else if(ws && !std::isspace(line[i])){
+            ws = false;
+        }
     }
-    
+    if(!ws){
+        count ++;
+    }
     return count;
 }
 
@@ -121,6 +135,168 @@ String_List::String_List(std::string line){
        
     }
 }
+
+void Set_Scale(AMD::Vec3* latt){
+    for(int i = 0; i<3; i++){
+        Scale.assign_col(i,latt[i]);
+    }
+}
+
+AMD::Vec3 Scaled_Coords(AMD::Vec3 vec){
+    AMD::Vec3 ret = Scale*vec;
+    return ret;
+}
+
+
+Dump::Dump()
+:init(false), dump_num_atoms(0), scale(1.0,1.0,1.0)
+{}
+
+Dump::~Dump(){
+    if(init){
+        free(Atom_Lines);
+    }
+}
+
+void Dump::Set_Lattice(std::ifstream& file_stream, size_t &pos){
+    std::string line;
+    std::stringstream ss;
+    file_stream.seekg(pos);
+    float x,y,z;
+    for(int i = 0; i<3; i++){
+        std::getline(file_stream, line);
+        int num_el = Get_Num_El(line);
+
+
+    }
+}
+
+void Dump::Set_Params_LAMMPS(std::string line){
+    std::stringstream ss;
+    ss << line;
+    std::string out;
+    while(ss >> out){
+        if(out.compare("id") == 0){has_id = true;}
+        if(out.compare("xs") == 0){scale.x = lattice[0][0];}
+        if(out.compare("ys") == 0){scale.y = lattice[1][1];}
+        if(out.compare("zs") == 0){scale.z = lattice[2][2];}
+    }
+}
+
+
+
+void Dump::Set_Params_JDFTX(std::string line){
+    std::stringstream ss;
+    ss << line;
+    std::string out;
+    while(ss >> out){
+        if(out.compare("id") == 0){has_id = true;}
+        if(out.compare("xs") == 0){scale.x = lattice[0][0];}
+        if(out.compare("ys") == 0){scale.y = lattice[1][1];}
+        if(out.compare("zs") == 0){scale.z = lattice[2][2];}
+    }
+}
+void Dump::Init(std::ifstream& file_stream, size_t& pos){
+    std::string line;
+    std::stringstream ss;
+    file_stream.seekg(pos);
+    std::getline(file_stream, line);
+    
+    
+    float lo = 0.0;float hi = 0.0;
+    
+    if(!match_TS(line.c_str())){
+        printf("First Line did not match TIMESTEP:\n");
+        exit(3);
+    }
+    else{
+        std::getline(file_stream, line);
+        timestep = get_int(line);
+    }
+    while(std::getline(file_stream, line)){
+        if(match_TS(line.c_str())){
+            pos = file_stream.tellg();
+            pos -= line.length() + 1;
+            file_stream.seekg(pos);
+            break;
+        }
+        
+        else if(match_Num_Atoms(line.c_str())){
+            std::getline(file_stream, line);
+            dump_num_atoms = get_int(line);
+        }
+        
+        else if(match_Box_Bounds(line.c_str())){
+            for(int i = 0; i< 3; i ++){
+                std::getline(file_stream, line);
+                ss << line;
+                ss >> lo >> hi;
+                lattice[i][i] = hi - lo;
+                ss.str("");
+                ss.clear();
+                }
+            
+        }// end of box else if
+        
+        else if(match_Atom_Line(line.c_str())){
+            int id;
+            int type;
+            std::string str_type;
+            float x,y,z;
+            Set_Params_LAMMPS(line);
+            Atom_Lines = (Atom_Line*)malloc(dump_num_atoms*sizeof(Atom_Line));
+            std::stringstream ss;
+            for(int i = 0; i< dump_num_atoms; i ++){
+                std::getline(file_stream, line);
+                ss << line;
+                if(has_id){
+                    ss >> id >> str_type >> x >> y >> z;
+                }
+                else{
+                    id=0;
+                    ss >> str_type >> x >> y >> z;
+                }
+                if(match_int(str_type)){type = atoi(str_type.c_str());}
+                else{
+                    char t = str_type[0];
+                    switch (t) {
+                        case 83:
+                            type = 1;
+                            break;
+                            
+                        case 72:
+                            type = 3;
+                            break;
+                            
+                        case 66:
+                            type = 3;
+                            break;
+                            
+                        case 73:
+                            type = 1;
+                            break;
+                            
+                        case 79:
+                            type = 2;
+                            break;
+                            
+                        default:
+                            type = 0;
+                            break;
+                    }
+                }
+                Atom_Lines[i] = Atom_Line(id,type,AMD::Vec3(x*scale.x,y*scale.y,z*scale.z));
+                ss.clear();
+                }
+            
+        } // end of atom line else if
+      
+    }// end of while loop
+    
+    init = true;
+    
+}
+
 
 
 String_List::~String_List(){}
