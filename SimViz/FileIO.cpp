@@ -7,6 +7,9 @@
 
 #include "FileIO.hpp"
 #include "AMDmath.hpp"
+#include "AtomInfo.h"
+#include <cstdlib>
+#include <malloc/_malloc.h>
 #include <math.h>
 namespace fs = std::filesystem;
 
@@ -18,9 +21,44 @@ std::string m_comment = "^#.*";
 std::string dump_file = ".dump";
 std::string dat_file = ".dat";
 
+enum File_Type {lammps, qe, jdftx, ase};
+File_Type file_type;
 enum Coords_Type {lattice, cartiesian};
 Coords_Type coords_type;
 AMD::Mat3 Scale;
+
+int FT_Hash(const char* ft){
+    int val = 0;
+    for(int i =0; i<strlen(ft); i++){
+        val +=ft[i];
+    }
+    return val % 10;
+}
+
+void Set_File_Type(const char* ft){
+    int hs = FT_Hash(ft);
+    switch (hs) {
+        case 0:
+            file_type = lammps;
+            break;
+        case 8:
+            file_type = lammps;
+            break;
+        case 3:
+            file_type = ase;
+            break;
+        case 7:
+            file_type = ase;
+            break;
+        case 4:
+            file_type = jdftx;
+            break;
+        default:
+            file_type = lammps;
+            break;
+    }
+}
+
 
 bool match(std::string input, std::string m_type){
     std::regex reg (m_type);
@@ -65,7 +103,18 @@ bool match_Atom_Line2(const char* line){return std::regex_match(line,re_AL2);}
 bool match_Atom_Line3(const char* line){return std::regex_match(line,re_AL3);}
 
 
+const std::regex re_CT("^coords-type");
+const std::regex re_jdftx_lattice("lattice \\\n");
+const std::regex re_jdftx_ions("# Ionic positions in lattice coordinates:");
+const std::regex re_jdftx_iter("^IonicMinimize:");
+const std::regex re_jdftx_ion_line("^ion");
 
+//# Ionic positions in lattice coordinates:
+bool match_CT(const char* line){return std::regex_match(line,re_CT);}
+bool match_jdftx_lattice(const char* line){return std::regex_match(line,re_jdftx_lattice);}
+bool match_jdftx_ions(const char* line){return std::regex_match(line,re_jdftx_ions);}
+bool match_jdftx_iter(const char* line){return std::regex_match(line,re_jdftx_iter);}
+bool match_jdftx_ion_line(const char* line){return std::regex_match(line,re_jdftx_ion_line);}
 
 unsigned int Get_Num_El(std::string line){
     bool ws = true;
@@ -99,7 +148,6 @@ void Get_Vals(std::string line, float* tmp, int* num){
     for(int i = 0; i < line.size(); i++){
         count = 0;
         while(!std::isspace(line[i]) && (i < line.size())){
-            char test = line[i];
             word[count] = line[i];
             count++;
             i++;
@@ -165,10 +213,27 @@ void Dump::Set_Lattice(std::ifstream& file_stream, size_t &pos){
     float x,y,z;
     for(int i = 0; i<3; i++){
         std::getline(file_stream, line);
-        int num_el = Get_Num_El(line);
-
-
+        String_List vals(line);
+        if(file_type == lammps){
+            float lo = atof(vals.m_words[0].c_str());
+            float hi = atof(vals.m_words[1].c_str());
+            float l = hi - lo;
+            AMD::Vec3 vec;
+            for (int j = 0; j<3;j++){
+                if(j == i){vec[j] = l;}
+                else{vec[j] = 0.0;}
+            }
+            this-> m_lattice[i] =vec;
+        }
+        else if(file_type == jdftx){
+            x = atof(vals.m_words[0].c_str());
+            y = atof(vals.m_words[1].c_str());
+            z = atof(vals.m_words[2].c_str());
+            AMD::Vec3 vec(x,y,z);
+            this->m_lattice[i] = vec;
+        }
     }
+    pos = file_stream.tellg();
 }
 
 void Dump::Set_Params_LAMMPS(std::string line){
@@ -176,10 +241,7 @@ void Dump::Set_Params_LAMMPS(std::string line){
     ss << line;
     std::string out;
     while(ss >> out){
-        if(out.compare("id") == 0){has_id = true;}
-        if(out.compare("xs") == 0){scale.x = lattice[0][0];}
-        if(out.compare("ys") == 0){scale.y = lattice[1][1];}
-        if(out.compare("zs") == 0){scale.z = lattice[2][2];}
+        if(out.compare("xs") == 0){coords_type=lattice;}
     }
 }
 
@@ -190,20 +252,17 @@ void Dump::Set_Params_JDFTX(std::string line){
     ss << line;
     std::string out;
     while(ss >> out){
-        if(out.compare("id") == 0){has_id = true;}
-        if(out.compare("xs") == 0){scale.x = lattice[0][0];}
-        if(out.compare("ys") == 0){scale.y = lattice[1][1];}
-        if(out.compare("zs") == 0){scale.z = lattice[2][2];}
+        if(out.compare("xs") == 0){coords_type=lattice;}
     }
 }
-void Dump::Init(std::ifstream& file_stream, size_t& pos){
+void Dump::Init(std::ifstream& file_stream, size_t& pos){}
+
+void Dump::Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos){
     std::string line;
-    std::stringstream ss;
     file_stream.seekg(pos);
     std::getline(file_stream, line);
+    int count = 0;
     
-    
-    float lo = 0.0;float hi = 0.0;
     
     if(!match_TS(line.c_str())){
         printf("First Line did not match TIMESTEP:\n");
@@ -227,15 +286,8 @@ void Dump::Init(std::ifstream& file_stream, size_t& pos){
         }
         
         else if(match_Box_Bounds(line.c_str())){
-            for(int i = 0; i< 3; i ++){
-                std::getline(file_stream, line);
-                ss << line;
-                ss >> lo >> hi;
-                lattice[i][i] = hi - lo;
-                ss.str("");
-                ss.clear();
-                }
-            
+            pos = file_stream.tellg();
+            Set_Lattice(file_stream, pos);
         }// end of box else if
         
         else if(match_Atom_Line(line.c_str())){
@@ -248,45 +300,24 @@ void Dump::Init(std::ifstream& file_stream, size_t& pos){
             std::stringstream ss;
             for(int i = 0; i< dump_num_atoms; i ++){
                 std::getline(file_stream, line);
-                ss << line;
-                if(has_id){
-                    ss >> id >> str_type >> x >> y >> z;
+                String_List sl(line);
+                if(sl.m_num_el == 4){
+                    id = count;
+                    type = El_Hash(sl.m_words[0].c_str());
+                    x = atof(sl.m_words[1].c_str());
+                    y = atof(sl.m_words[2].c_str());
+                    z = atof(sl.m_words[3].c_str());
+                    count ++;
                 }
-                else{
-                    id=0;
-                    ss >> str_type >> x >> y >> z;
+                else if(sl.m_num_el == 5){
+                    id=atoi(sl.m_words[0].c_str());
+                    type = El_Hash(sl.m_words[1].c_str());
+                    x = atof(sl.m_words[2].c_str());
+                    y = atof(sl.m_words[3].c_str());
+                    z = atof(sl.m_words[4].c_str());
                 }
-                if(match_int(str_type)){type = atoi(str_type.c_str());}
-                else{
-                    char t = str_type[0];
-                    switch (t) {
-                        case 83:
-                            type = 1;
-                            break;
-                            
-                        case 72:
-                            type = 3;
-                            break;
-                            
-                        case 66:
-                            type = 3;
-                            break;
-                            
-                        case 73:
-                            type = 1;
-                            break;
-                            
-                        case 79:
-                            type = 2;
-                            break;
-                            
-                        default:
-                            type = 0;
-                            break;
-                    }
-                }
-                Atom_Lines[i] = Atom_Line(id,type,AMD::Vec3(x*scale.x,y*scale.y,z*scale.z));
-                ss.clear();
+                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
+                Atom_Lines[i] = Atom_Line(id,type,cartesian_coords);
                 }
             
         } // end of atom line else if
@@ -297,6 +328,63 @@ void Dump::Init(std::ifstream& file_stream, size_t& pos){
     
 }
 
+
+
+void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
+    std::string line;
+    file_stream.seekg(pos);
+    std::getline(file_stream, line);
+    int count = 0;
+    int ts = 0;
+    while(std::getline(file_stream, line)){
+        if(match_jdftx_iter(line.c_str())){
+            pos = file_stream.tellg();
+            pos -= line.length() + 1;
+            file_stream.seekg(pos);
+            this->timestep = ts;
+            ts++;
+            break;
+        }
+        
+        else if(match_CT(line.c_str())){
+            std::getline(file_stream, line);
+            String_List sl(line);
+            coords_type = lattice;
+        }
+        
+        else if(match_jdftx_lattice(line.c_str())){
+            pos = file_stream.tellg();
+            Set_Lattice(file_stream, pos);
+        }// end of box else if
+        
+        else if(match_jdftx_ions(line.c_str())){
+            int id;
+            int type;
+            std::string str_type;
+            float x,y,z;
+            Atom_Lines = (Atom_Line*)malloc(sizeof(Atom_Line));
+            std::getline(file_stream, line);
+            while(match_jdftx_ion_line(line.c_str())){
+                Atom_Lines = (Atom_Line*)realloc(Atom_Lines, (count+1)*sizeof(Atom_Line));
+                String_List sl(line);
+                id = count;
+                type = El_Hash(sl.m_words[1].c_str());
+                x = atof(sl.m_words[2].c_str());
+                y = atof(sl.m_words[3].c_str());
+                z = atof(sl.m_words[4].c_str());
+                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
+                Atom_Lines[count] = Atom_Line(id,type,cartesian_coords);
+                count ++;
+                std::getline(file_stream, line);
+                }
+            dump_num_atoms = count;
+        } // end of atom line else if
+      
+    }// end of while loop
+    
+    init = true;
+    
+}
 
 
 String_List::~String_List(){}

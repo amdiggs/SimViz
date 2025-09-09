@@ -36,13 +36,24 @@ unsigned int Get_Num_El(std::string line){
 
 
 
+int FT_Hash(const char* ft){
+    int val = 0;
+    for(int i =0; i<strlen(ft); i++){
+        val +=ft[i];
+    }
+    return val % 10;
+}
+
 
 
 
 
 int main(int argc, const char * argv[]) 
 {
-    int num = Get_Num_El(argv[1]);
-    printf("num = %d\n",num);
+    const char* fts[6] = {"lammps", "LAMMPS", "jdftx", "JDFTX", "ase", "ASE"};
+    for(int i = 0; i<6; i++){
+        int val = FT_Hash(fts[i]);
+        printf("%s = %d\n",fts[i],val);
+    }
     return 0;
 }

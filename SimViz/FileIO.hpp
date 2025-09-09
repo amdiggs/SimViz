@@ -16,6 +16,7 @@
 #include <sstream>
 #include <filesystem>
 #include "AMDmath.hpp"
+//#include "AtomInfo.h"
 //#include "Atomic.hpp"
 #define MAX_WORD 250
 #define MAX_TS 1000
@@ -42,16 +43,17 @@ struct Dump
 {
     int timestep;
     int dump_num_atoms;
-    AMD::Vec3 lattice[3];
+    AMD::Vec3 m_lattice[3];
     Atom_Line* Atom_Lines;
     bool init;
-    bool has_id = false;
     AMD::Vec3 scale;
     
     
     Dump();
     ~Dump();
     void Init(std::ifstream& file_stream, size_t& pos);
+    void Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos);
+    void Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos);
     void Set_Params_LAMMPS(std::string line);
     void Set_Params_JDFTX(std::string line);
     void Set_Lattice(std::ifstream& file_stream, size_t& pos);
@@ -93,8 +95,7 @@ struct String_List{
     int m_num_el = 0;
     String_List(std::string line);
     ~String_List();
-    
-    
+    void print();
 };
 
 const std::regex re_TS(TIMESTEP);

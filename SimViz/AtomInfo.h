@@ -12,7 +12,6 @@
 struct atom_info{
     float rad = 0.;
     AMD::Vec4 clr;
-    
 };
 
 
