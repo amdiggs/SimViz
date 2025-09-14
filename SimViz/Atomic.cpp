@@ -10,6 +10,7 @@
 #include "AtomInfo.h"
 #include "Meshes.hpp"
 Simulation* Sim = Simulation::Get();
+extern Dump_Arr* data;
 
 float Boundary_Wrapped_Dist(AMD::Vec3 A, AMD::Vec3 B){
     AMD::Vec3 box = Sim->Sim_Box();
@@ -36,32 +37,30 @@ float Dist(AMD::Vec3 A, AMD::Vec3 B){
     return sqrt(dist_sq);
 }
 
-
+float Comp_Bond_Length(Atom& A, Atom& B){
+    atom_info ia = Get_Atom_Info(A.Get_Type());
+    atom_info ib = Get_Atom_Info(B.Get_Type());
+    float ra = ia.rad;
+    float rb = ib.rad;
+    return 1.25*(ra + rb);
+}
 
 Atom::Atom()
 : m_id(10000000), m_type(0), m_coords(0.0,0.0,0.0), m_num_neighbors(0)
-{
-    m_neighbors = (Atom**)malloc(MAX_NEIGHBORS*sizeof(Atom*));
-}
+{}
 
-Atom::Atom(std::string line)
-:m_num_neighbors(0)
+Atom::Atom(Atom_Line al)
+: m_num_neighbors(0)
 {
-    // LAMMPS dump looks like At.num At.type xs ys zs
-    std::stringstream ss;
-    float x, y, z;
-    ss << line;
-    ss >> m_id >> m_type >> x >> y >> z;
-    m_coords = AMD::Vec3(x,y,z);
-    m_neighbors = (Atom**)malloc(MAX_NEIGHBORS*sizeof(Atom*));
-    
+    m_id = al.id;
+    m_type = al.type;
+    m_coords = al.coords;
+
 }
 
 Atom::Atom(int _id, int _type, float x, float y, float z)
 :m_id(_id), m_type(_type),m_coords(x, y, z), m_num_neighbors(0)
-{
-    m_neighbors = (Atom**)malloc(MAX_NEIGHBORS*sizeof(Atom*));
-}
+{}
 
 Atom& Atom::operator=(const Atom& other){
     if(this == &other){return *this;}
@@ -81,9 +80,7 @@ Atom& Atom::operator=(const Atom& other){
 }
 
 
-Atom::~Atom() {
-    free(m_neighbors);
-}
+Atom::~Atom(){}
 
 
 AMD::Vec3& Atom::Get_Coords(){
@@ -103,7 +100,7 @@ unsigned int Atom::Get_Num_Neighbors() const{
 }
 
 Atom** Atom::Get_Neighbors(){
-    return this->m_neighbors;
+    return m_neighbors;
 }
 
 
@@ -285,7 +282,10 @@ void Bond::Set_Len() {
     
 }
 
-
+//
+//
+//
+//   This is the simulation class it contains all info about the simulation.
 
 Simulation::Simulation()
 :m_num_blocks(0), m_curr_block(0),m_num_atoms(0), m_init(false), shift(0.0,0.0,0.0) {}
@@ -293,42 +293,24 @@ Simulation::Simulation()
 
 
 
-Simulation::~Simulation()
-{
-    for (int i = 0; i< m_num_blocks; i++){
-        m_data[i].~Dump();
-    }
-    free(m_data);
-}
+Simulation::~Simulation(){free(atoms);}
 
 
 Simulation Simulation::inst;
 
-Simulation* Simulation::Get(){
-    return &inst;
-}
+Simulation* Simulation::Get(){ return &inst;}
 
 
 
 
 
 
-void Simulation::Init(const char* file){
-    
-    size_t pos = 0;
-    std::ifstream infile(file, std::ios_base::in);
-    if (!infile.is_open()){
-        std::cout << "File did not open!!" << std::endl;
-        exit(9);
-    }
-    
-    int count = 0;
-    while (!infile.eof()) {
-        m_num_blocks ++;
-        m_data = (Dump*)realloc(m_data, m_num_blocks*sizeof(Dump));
-        m_data[count] = Dump();
-        m_data[count].Init(infile, pos);
-        count++;
+void Simulation::Init(const char* file, const char* ft){
+    data->Init(file, ft);
+    m_num_atoms = data->dumps[0].dump_num_atoms;
+    atoms = (Atom*)malloc(m_num_atoms*sizeof(Atom));
+    for(int i = 0; i<m_num_atoms; i++){
+        atoms[i] = Atom();
     }
     Set_Block(0);
     m_bonds = (AMD::Vec3*)malloc(6*m_num_atoms*sizeof(AMD::Vec3));
@@ -338,43 +320,16 @@ void Simulation::Init(const char* file){
     
 }
 void Simulation::Compute_Neighbors() { 
-    float cut;
-    int num_nebs;
     int count = 0;
     float dist;
     for (int i = 0; i< m_num_atoms; i++){
         AMD::Vec3 A = atoms[i].Get_Coords();
-        num_nebs =0;
         if(A.x > 10000.0){continue;}
         for (int j = i+1; j< m_num_atoms; j++){
             AMD::Vec3 B = atoms[j].Get_Coords();
             if(B.x > 10000.0){continue;}
             dist = Dist(A, B);
-            switch (atoms[i].Get_Type() + atoms[j].Get_Type()) {
-                case 2:
-                    cut = cutoffs[0];
-                    break;
-                    
-                case 3:
-                    cut = cutoffs[1];
-                    break;
-                    
-                case 4:
-                    cut = cutoffs[2];
-                    break;
-                case 5:
-                    cut = 1.6;
-                    break;
-                    
-                case 6:
-                    cut = 2.3;
-                    break;
-                    
-                default:
-                    cut = 0.0;
-                    break;
-            }
-            
+            float cut = Comp_Bond_Length(atoms[i], atoms[j]);
             if(dist <= cut){
                 m_bonds[count] = A;
                 count++;
@@ -407,17 +362,17 @@ void Simulation::Set_Block(int block){
         block = m_num_blocks - 1;
     }
     
-    m_timestep = m_data[block].timestep;
-    m_num_atoms = m_data[block].dump_num_atoms;
+    m_timestep = data->dumps[block].timestep;
+    m_num_atoms = data->dumps[block].dump_num_atoms;
     
     for (int i = 0; i< 3; i++){
-        m_lattice[i] = m_data[block].lattice[i];
+        m_lattice[i] = data->dumps[block].m_lattice[i];
     }
     
     
     
     for (int i = 0; i< m_num_atoms; i++){
-        atoms[i].Set_Vals(m_data[block].Atom_Lines[i]);
+        atoms[i].Set_Vals(data->dumps[block].Atom_Lines[i]);
     }
     
     m_curr_block = block;
@@ -505,7 +460,7 @@ void Simulation::print(Atom_Attrib attrib){
             
         case NEIGHBORS:
             for (int i = 0; i< m_num_bonds; i++){
-                std::cout << neighbor_IDs[i][0] <<" -- " << neighbor_IDs[i][1] << std::endl;
+                //std::cout << neighbor_IDs[i][0] <<" -- " << neighbor_IDs[i][1] << std::endl;
                 std::cout << "=======================================" << std::endl;
             }
             break;
@@ -515,13 +470,4 @@ void Simulation::print(Atom_Attrib attrib){
     
     
 }
-
-
-
-
-
-
-
-
-
 

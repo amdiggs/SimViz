@@ -11,7 +11,9 @@
 #include <cstdlib>
 #include <malloc/_malloc.h>
 #include <math.h>
-namespace fs = std::filesystem;
+#include <sys/_types/_size_t.h>
+
+Dump_Arr* data = Dump_Arr::Get();
 
 std::string m_dig = "[[:digit:]]+";
 std::string m_float = "[[:digit:]]+\\.[[:digit:]]+";
@@ -184,209 +186,6 @@ String_List::String_List(std::string line){
     }
 }
 
-void Set_Scale(AMD::Vec3* latt){
-    for(int i = 0; i<3; i++){
-        Scale.assign_col(i,latt[i]);
-    }
-}
-
-AMD::Vec3 Scaled_Coords(AMD::Vec3 vec){
-    AMD::Vec3 ret = Scale*vec;
-    return ret;
-}
-
-
-Dump::Dump()
-:init(false), dump_num_atoms(0), scale(1.0,1.0,1.0)
-{}
-
-Dump::~Dump(){
-    if(init){
-        free(Atom_Lines);
-    }
-}
-
-void Dump::Set_Lattice(std::ifstream& file_stream, size_t &pos){
-    std::string line;
-    std::stringstream ss;
-    file_stream.seekg(pos);
-    float x,y,z;
-    for(int i = 0; i<3; i++){
-        std::getline(file_stream, line);
-        String_List vals(line);
-        if(file_type == lammps){
-            float lo = atof(vals.m_words[0].c_str());
-            float hi = atof(vals.m_words[1].c_str());
-            float l = hi - lo;
-            AMD::Vec3 vec;
-            for (int j = 0; j<3;j++){
-                if(j == i){vec[j] = l;}
-                else{vec[j] = 0.0;}
-            }
-            this-> m_lattice[i] =vec;
-        }
-        else if(file_type == jdftx){
-            x = atof(vals.m_words[0].c_str());
-            y = atof(vals.m_words[1].c_str());
-            z = atof(vals.m_words[2].c_str());
-            AMD::Vec3 vec(x,y,z);
-            this->m_lattice[i] = vec;
-        }
-    }
-    pos = file_stream.tellg();
-}
-
-void Dump::Set_Params_LAMMPS(std::string line){
-    std::stringstream ss;
-    ss << line;
-    std::string out;
-    while(ss >> out){
-        if(out.compare("xs") == 0){coords_type=lattice;}
-    }
-}
-
-
-
-void Dump::Set_Params_JDFTX(std::string line){
-    std::stringstream ss;
-    ss << line;
-    std::string out;
-    while(ss >> out){
-        if(out.compare("xs") == 0){coords_type=lattice;}
-    }
-}
-void Dump::Init(std::ifstream& file_stream, size_t& pos){}
-
-void Dump::Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos){
-    std::string line;
-    file_stream.seekg(pos);
-    std::getline(file_stream, line);
-    int count = 0;
-    
-    
-    if(!match_TS(line.c_str())){
-        printf("First Line did not match TIMESTEP:\n");
-        exit(3);
-    }
-    else{
-        std::getline(file_stream, line);
-        timestep = get_int(line);
-    }
-    while(std::getline(file_stream, line)){
-        if(match_TS(line.c_str())){
-            pos = file_stream.tellg();
-            pos -= line.length() + 1;
-            file_stream.seekg(pos);
-            break;
-        }
-        
-        else if(match_Num_Atoms(line.c_str())){
-            std::getline(file_stream, line);
-            dump_num_atoms = get_int(line);
-        }
-        
-        else if(match_Box_Bounds(line.c_str())){
-            pos = file_stream.tellg();
-            Set_Lattice(file_stream, pos);
-        }// end of box else if
-        
-        else if(match_Atom_Line(line.c_str())){
-            int id;
-            int type;
-            std::string str_type;
-            float x,y,z;
-            Set_Params_LAMMPS(line);
-            Atom_Lines = (Atom_Line*)malloc(dump_num_atoms*sizeof(Atom_Line));
-            std::stringstream ss;
-            for(int i = 0; i< dump_num_atoms; i ++){
-                std::getline(file_stream, line);
-                String_List sl(line);
-                if(sl.m_num_el == 4){
-                    id = count;
-                    type = El_Hash(sl.m_words[0].c_str());
-                    x = atof(sl.m_words[1].c_str());
-                    y = atof(sl.m_words[2].c_str());
-                    z = atof(sl.m_words[3].c_str());
-                    count ++;
-                }
-                else if(sl.m_num_el == 5){
-                    id=atoi(sl.m_words[0].c_str());
-                    type = El_Hash(sl.m_words[1].c_str());
-                    x = atof(sl.m_words[2].c_str());
-                    y = atof(sl.m_words[3].c_str());
-                    z = atof(sl.m_words[4].c_str());
-                }
-                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
-                Atom_Lines[i] = Atom_Line(id,type,cartesian_coords);
-                }
-            
-        } // end of atom line else if
-      
-    }// end of while loop
-    
-    init = true;
-    
-}
-
-
-
-void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
-    std::string line;
-    file_stream.seekg(pos);
-    std::getline(file_stream, line);
-    int count = 0;
-    int ts = 0;
-    while(std::getline(file_stream, line)){
-        if(match_jdftx_iter(line.c_str())){
-            pos = file_stream.tellg();
-            pos -= line.length() + 1;
-            file_stream.seekg(pos);
-            this->timestep = ts;
-            ts++;
-            break;
-        }
-        
-        else if(match_CT(line.c_str())){
-            std::getline(file_stream, line);
-            String_List sl(line);
-            coords_type = lattice;
-        }
-        
-        else if(match_jdftx_lattice(line.c_str())){
-            pos = file_stream.tellg();
-            Set_Lattice(file_stream, pos);
-        }// end of box else if
-        
-        else if(match_jdftx_ions(line.c_str())){
-            int id;
-            int type;
-            std::string str_type;
-            float x,y,z;
-            Atom_Lines = (Atom_Line*)malloc(sizeof(Atom_Line));
-            std::getline(file_stream, line);
-            while(match_jdftx_ion_line(line.c_str())){
-                Atom_Lines = (Atom_Line*)realloc(Atom_Lines, (count+1)*sizeof(Atom_Line));
-                String_List sl(line);
-                id = count;
-                type = El_Hash(sl.m_words[1].c_str());
-                x = atof(sl.m_words[2].c_str());
-                y = atof(sl.m_words[3].c_str());
-                z = atof(sl.m_words[4].c_str());
-                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
-                Atom_Lines[count] = Atom_Line(id,type,cartesian_coords);
-                count ++;
-                std::getline(file_stream, line);
-                }
-            dump_num_atoms = count;
-        } // end of atom line else if
-      
-    }// end of while loop
-    
-    init = true;
-    
-}
-
-
 String_List::~String_List(){}
 
 std::string& String_List::operator[](const int index){
@@ -412,7 +211,7 @@ float get_float(std::string fl_str)
 }
 
 
-
+//Why do I have this?
 unsigned int Hash(const char* word){
     unsigned int hash_int = 0;
     for (int i = 0; i<std::strlen(word); i++){
@@ -623,6 +422,251 @@ Rho_Data_3D Read_Charge_Density(const char* file){
     return dat;
 }
 
+void Set_Scale(AMD::Vec3* latt){
+    for(int i = 0; i<3; i++){
+        Scale.assign_col(i,latt[i]);
+    }
+}
+
+AMD::Vec3 Scaled_Coords(AMD::Vec3 vec){
+    AMD::Vec3 ret = Scale*vec;
+    return ret;
+}
+
+
+Dump::Dump()
+:init(false), dump_num_atoms(0), scale(1.0,1.0,1.0)
+{}
+
+Dump& Dump::operator=(const Dump &other){
+    this->timestep= other.timestep;
+    this->dump_num_atoms= other.dump_num_atoms;
+    for(int i = 0; i<3; i++){
+        this->m_lattice[i] = other.m_lattice[i];
+    }
+    size_t at_sz = this->dump_num_atoms*sizeof(Atom_Line);
+    this->Atom_Lines = (Atom_Line*)malloc(at_sz);
+    for(int i = 0; i<dump_num_atoms;i++){
+        this->Atom_Lines[i]=other.Atom_Lines[i];
+    }
+    init = true;
+    return *this;
+}
+
+
+Dump::~Dump(){
+    if(init){
+        free(Atom_Lines);
+    }
+}
+
+void Dump::Set_Lattice(std::ifstream& file_stream, size_t &pos){
+    std::string line;
+    std::stringstream ss;
+    file_stream.seekg(pos);
+    float x,y,z;
+    for(int i = 0; i<3; i++){
+        std::getline(file_stream, line);
+        String_List vals(line);
+        if(file_type == lammps){
+            float lo = atof(vals.m_words[0].c_str());
+            float hi = atof(vals.m_words[1].c_str());
+            float l = hi - lo;
+            AMD::Vec3 vec;
+            for (int j = 0; j<3;j++){
+                if(j == i){vec[j] = l;}
+                else{vec[j] = 0.0;}
+            }
+            this-> m_lattice[i] =vec;
+        }
+        else if(file_type == jdftx){
+            x = atof(vals.m_words[0].c_str());
+            y = atof(vals.m_words[1].c_str());
+            z = atof(vals.m_words[2].c_str());
+            AMD::Vec3 vec(x,y,z);
+            this->m_lattice[i] = vec;
+        }
+    }
+    pos = file_stream.tellg();
+}
+
+void Dump::Set_Params_LAMMPS(std::string line){
+    std::stringstream ss;
+    ss << line;
+    std::string out;
+    while(ss >> out){
+        if(out.compare("xs") == 0){coords_type=lattice;}
+    }
+}
+
+
+
+void Dump::Set_Params_JDFTX(std::string line){
+    std::stringstream ss;
+    ss << line;
+    std::string out;
+    while(ss >> out){
+        if(out.compare("xs") == 0){coords_type=lattice;}
+    }
+}
+void Dump::Init(std::ifstream& file_stream, size_t& pos){}
+
+void Dump::Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos){
+    std::string line;
+    file_stream.seekg(pos);
+    std::getline(file_stream, line);
+    int count = 0;
+    
+    
+    if(!match_TS(line.c_str())){
+        printf("First Line did not match TIMESTEP:\n");
+        exit(3);
+    }
+    else{
+        std::getline(file_stream, line);
+        timestep = get_int(line);
+    }
+    while(std::getline(file_stream, line)){
+        if(match_TS(line.c_str())){
+            pos = file_stream.tellg();
+            pos -= line.length() + 1;
+            file_stream.seekg(pos);
+            break;
+        }
+        
+        else if(match_Num_Atoms(line.c_str())){
+            std::getline(file_stream, line);
+            dump_num_atoms = get_int(line);
+        }
+        
+        else if(match_Box_Bounds(line.c_str())){
+            pos = file_stream.tellg();
+            Set_Lattice(file_stream, pos);
+        }// end of box else if
+        
+        else if(match_Atom_Line(line.c_str())){
+            int id;
+            int type;
+            std::string str_type;
+            float x,y,z;
+            Set_Params_LAMMPS(line);
+            Atom_Lines = (Atom_Line*)malloc(dump_num_atoms*sizeof(Atom_Line));
+            std::stringstream ss;
+            for(int i = 0; i< dump_num_atoms; i ++){
+                std::getline(file_stream, line);
+                String_List sl(line);
+                if(sl.m_num_el == 4){
+                    id = count;
+                    type = El_Hash(sl.m_words[0].c_str());
+                    x = atof(sl.m_words[1].c_str());
+                    y = atof(sl.m_words[2].c_str());
+                    z = atof(sl.m_words[3].c_str());
+                    count ++;
+                }
+                else if(sl.m_num_el == 5){
+                    id=atoi(sl.m_words[0].c_str());
+                    type = El_Hash(sl.m_words[1].c_str());
+                    x = atof(sl.m_words[2].c_str());
+                    y = atof(sl.m_words[3].c_str());
+                    z = atof(sl.m_words[4].c_str());
+                }
+                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
+                Atom_Lines[i] = Atom_Line(id,type,cartesian_coords);
+                }
+            
+        } // end of atom line else if
+      
+    }// end of while loop
+    
+    init = true;
+    
+}
+
+
+
+void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
+    std::string line;
+    file_stream.seekg(pos);
+    std::getline(file_stream, line);
+    int count = 0;
+    int ts = 0;
+    while(std::getline(file_stream, line)){
+        if(match_jdftx_iter(line.c_str())){
+            pos = file_stream.tellg();
+            pos -= line.length() + 1;
+            file_stream.seekg(pos);
+            this->timestep = ts;
+            ts++;
+            break;
+        }
+        
+        else if(match_CT(line.c_str())){
+            std::getline(file_stream, line);
+            String_List sl(line);
+            coords_type = lattice;
+        }
+        
+        else if(match_jdftx_lattice(line.c_str())){
+            pos = file_stream.tellg();
+            Set_Lattice(file_stream, pos);
+        }// end of box else if
+        
+        else if(match_jdftx_ions(line.c_str())){
+            int id;
+            int type;
+            std::string str_type;
+            float x,y,z;
+            Atom_Lines = (Atom_Line*)malloc(sizeof(Atom_Line));
+            std::getline(file_stream, line);
+            while(match_jdftx_ion_line(line.c_str())){
+                Atom_Lines = (Atom_Line*)realloc(Atom_Lines, (count+1)*sizeof(Atom_Line));
+                String_List sl(line);
+                id = count;
+                type = El_Hash(sl.m_words[1].c_str());
+                x = atof(sl.m_words[2].c_str());
+                y = atof(sl.m_words[3].c_str());
+                z = atof(sl.m_words[4].c_str());
+                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
+                Atom_Lines[count] = Atom_Line(id,type,cartesian_coords);
+                count ++;
+                std::getline(file_stream, line);
+                }
+            dump_num_atoms = count;
+        } // end of atom line else if
+      
+    }// end of while loop
+    
+    init = true;
+    
+}
+
+Dump_Arr::Dump_Arr(){}
+
+void Dump_Arr::Init(const char* dat_file, const char* ft){
+    //Read in data file
+    std::ifstream infile(dat_file, std::ios_base::in);
+    if (!infile.is_open()){
+        std::cout << "File did not open!!" << std::endl;
+        exit(9);
+    }
+    //set file type
+    Set_File_Type(ft);
+    size_t pos;
+    pos =infile.tellg();
+    this->dumps=(Dump*)malloc(sizeof(Dump));
+    while(!infile.eof()){
+        this->dumps=(Dump*)realloc(dumps,(num_iter+1)*sizeof(Dump));
+        Dump step;
+        step.Init(infile,pos);
+        this->dumps[num_iter]= step;
+        num_iter++;
+    }
+    init = true;
+}
+
+Dump_Arr* Dump_Arr::Get(){return &inst;}
+Dump_Arr Dump_Arr::inst;
+Dump_Arr::~Dump_Arr(){if(init){free(dumps);}}
 
 
 void Write_Dat(float* dat, int num, const char* file_name){

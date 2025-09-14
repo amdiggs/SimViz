@@ -4,7 +4,7 @@ CompileFlags:
     - -Wall
     - -I/Users/diggs/Desktop/SimViz/SimViz/Resources
     - -I/Users/diggs/Desktop/SimViz/SimViz/Rendering
-    - -I/Users/diggs/Desktop/SimViz/Math
+    - -I/Users/diggs/Desktop/SimViz/SimViz/Math
     - -I/Users/diggs/Desktop/SimViz/SimViz/SimViz
     - -I/opt/homebrew/include
     - -I/opt/homebrew/Cellar/freetype/2.13.3/include/freetype2

@@ -30,7 +30,7 @@
 #define ATOM_LINE3 "ITEM: ATOMS type x y z"
 
 
-
+//needed by Atom constructor
 struct Atom_Line{
     int id;
     int type;
@@ -50,6 +50,7 @@ struct Dump
     
     
     Dump();
+    Dump& operator=(const Dump& other);
     ~Dump();
     void Init(std::ifstream& file_stream, size_t& pos);
     void Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos);
@@ -58,6 +59,26 @@ struct Dump
     void Set_Params_JDFTX(std::string line);
     void Set_Lattice(std::ifstream& file_stream, size_t& pos);
 };
+
+
+
+class Dump_Arr{
+private:
+    Dump_Arr();
+    Dump_Arr(const Dump_Arr&) = delete;
+    Dump_Arr operator=(const Dump_Arr&) = delete;
+    static Dump_Arr inst;
+
+public:
+    Dump* dumps = NULL;
+    unsigned int num_iter=0;
+    bool init = false;
+    static Dump_Arr* Get();
+    void Init(const char* dat_file, const char* ft);
+    ~Dump_Arr();
+
+};
+
 
 struct Data_2D{
     float** m_dat = NULL;

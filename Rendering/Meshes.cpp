@@ -42,80 +42,6 @@ AMD::Vec3 Get_Basis(char hat){
     }
 }
 
-Axis::Axis(char axis, float lo, float high, AMD::Vec3 start,AMD::Vec3 end, int num_ticks, const char* plane, const char* type)
-:m_dir(Get_Basis(axis)) ,m_origin(start), m_num_ticks(num_ticks),m_lo(lo),m_range(high - lo), m_data_type(type)
-{
-    AMD::Vec3 tmp = end - start;
-    m_length = tmp.dot(m_dir);
-    m_plane[0] = plane[0]; m_plane[1] = plane[1];
-}
-
-
-Axis::Axis(char axis, float* data,int num_vals, AMD::Vec3 start,AMD::Vec3 end, int num_ticks, const char* plane, const char* type)
-:m_dir(Get_Basis(axis)) ,m_origin(start), m_num_ticks(num_ticks), m_data_type(type)
-{
-    AMD::Vec3 tmp = end - start;
-    m_length = tmp.dot(m_dir);
-    m_plane[0] = plane[0]; m_plane[1] = plane[1];
-    float min = 1000.0; float max = -1000.0;
-    for (int i = 0; i < num_vals; i++){
-        min = AMD::Min(min, data[i]);
-        max = AMD::Max(max, data[i]);
-    }
-    m_lo = min;
-    m_range = max - min;
-}
-
-Axis::~Axis(){}
-
-
-
-void Axis::Set_Values(){
-    if(m_num_ticks == 0){std::cout << "class Axis: number of ticks == 0! \n"; exit(27);}
-    if(m_num_ticks > 25){std::cout << "class Axis: number of ticks > 25! \n"; exit(27);}
-    
-    float dx = m_range/m_num_ticks;
-    float val = m_lo;
-    for ( int i = 0; i<m_num_ticks; i++){
-        m_values[i] = val;
-        val+=dx;
-    }
-    
-}
-
-
-void Axis::Set_Positions(){
-    if(m_num_ticks == 0){std::cout << "class Axis: number of ticks == 0! \n"; exit(27);}
-    if(m_num_ticks > 25){std::cout << "class Axis: number of ticks > 25! \n"; exit(27);}
-    
-    float dx = m_length/m_num_ticks;
-    AMD::Vec3 tmp;
-    for ( int i = 0; i<m_num_ticks; i++){
-        tmp = m_dir*(i*dx);
-        m_positions[i] = m_origin + tmp;
-    }
-    
-}
-
-
-
-AMD::Vec3* Axis::Get_Positions(){
-    return (AMD::Vec3*)m_positions;
-}
-
-
-float* Axis::Get_Values(){
-    return m_values;
-}
-
-void Axis::Draw(){
-    Text_Mesh text;
-    
-    text.Render_Tick_Labels(m_positions, m_values, m_num_ticks, 2.0, m_plane);
-    
-}
-
-
 //##############################################################################################
 Atoms_Mesh::Atoms_Mesh()
 :m_sh(shader_file)
@@ -133,9 +59,6 @@ Atoms_Mesh::Atoms_Mesh()
     m_clrs = (AMD::Vec4*)malloc(num_ats*sizeof(AMD::Vec4));
     m_offsets = (AMD::Vec3*)malloc(num_ats*sizeof(AMD::Vec3));
     m_radii = (float*)malloc(num_ats*sizeof(float));
-    //Set_Data();
-    
-    
 }
 
 
@@ -154,10 +77,9 @@ void Atoms_Mesh::Set_Data(){
     m_num_atoms = Sim->Num_Atoms();
     Atom* ats = Sim->Atoms();
     AMD::Vec3 center = Sim->Sim_Box()*(-0.5);
-    const char* typs[3] = {"Ir","O","H"};
     for(int i = 0; i < m_num_atoms; i++){
-        int idx = ats[i].Get_Type();
-        atom_info a_info = Get_Atom_Info(typs[idx - 1]);
+        int typ = ats[i].Get_Type();
+        atom_info a_info = Get_Atom_Info(typ);
         m_offsets[i] = ats[i].Get_Coords();
         m_offsets[i]+=center;
         m_radii[i] = a_info.rad;
@@ -169,65 +91,19 @@ void Atoms_Mesh::Set_Data(){
 
 
 
-void Atoms_Mesh::Set_Shader(){
-    this->m_sh.bind();
-    
-    
-    
-}
+void Atoms_Mesh::Set_Shader(){this->m_sh.bind();}
 
 
 void Atoms_Mesh::Set_Uniforms(){
     this->m_sh.Set_Uniform_MVP();
     this->m_sh.Set_Uniform_Normal();
-    
 }
 
 void Atoms_Mesh::Set_Uniforms(Light_Src& src){
     this->m_sh.Set_Uniform_MVP();
     this->m_sh.Set_Uniform_Normal();
     this->m_sh.Set_Uinform_LightSource(src);
-    
 }
-
-
-/*
-void Atoms_Mesh::Sort(char n){
-    AMD::Vec3 dir = Get_Basis(n);
-    AMD::Vec3 box = Sim->Sim_Box();
-    int num_slices = ceil(box.y/1.35748);
-    AMD::Vec3 slices[num_slices][1000];
-    int types[num_slices][1000];
-    int counts[num_slices];
-    int prev = m_num_atoms;
-    for(int n = 0; n< num_slices; n++){
-        counts[n] = 0;
-    }
-    for(int i = 0; i < m_num_atoms; i++){
-        AMD::Vec3 coords = m_offsets[i] + 0.5*box;
-        int r_id = floor(coords.y/1.3575);
-        int c_id = counts[r_id];
-        slices[r_id][c_id] = m_offsets[i];
-        types[r_id][c_id] = m_radii[i];
-        counts[r_id] ++;
-        
-    }
-    
-    int count = 0;
-    for(int i = 0; i < num_slices - 2; i++){
-        for (int j = 0; j < counts[i]; j++){
-            m_offsets[count] = slices[i][j];
-            m_radii[count] = types[i][j];
-            count ++;
-        }
-    }
-    
-    if(count != prev){
-        ;
-    }
-    m_num_atoms = count;
-}
-*/
 
 void Atoms_Mesh::Draw(){
     
@@ -250,113 +126,6 @@ void Atoms_Mesh::Draw(){
     this->m_IBO.unbind();
 }
 
-
-
-//##############################################################################################
-Atoms_Mesh2::Atoms_Mesh2()
-:m_sh(shader_file)
-{
-    Sphere sp(1.0);
-    int num_ats = Sim->Num_Atoms();
-    m_num_verts = sp.num_verts()*num_ats;
-    m_num_indx = sp.num_idx()*num_ats;
-    m_verts = (AMD::Vertex_Basic*)malloc(m_num_verts*sizeof(AMD::Vertex_Basic));
-    m_ambient = (float*)malloc(m_num_verts*sizeof(float));
-    m_indices = (int*)malloc(m_num_indx*sizeof(int));
-    
-    Set_Data();
-    
-    VertexBuffer vb((void*)m_verts, m_num_verts*sizeof(AMD::Vertex_Basic));
-    m_VAO.Add_Basic_Vertex_Buffer(vb);
-    m_IBO.Gen_Buffer(m_indices,m_num_indx);
-    m_amb_vbo = m_VAO.Add_Dynamic_Buffer(sizeof(float));
-    Compute_Ambient(m_verts, m_ambient, m_num_verts);
-    Write_Dat(m_ambient, m_num_verts, "/Users/diggs/Desktop/Ambient.dat");
-    int test = 0;
-    
-    
-}
-
-
-
-Atoms_Mesh2::~Atoms_Mesh2()
-{
-    free(m_verts);
-    free(m_ambient);
-    free(m_indices);
-}
-
-
-
-void Atoms_Mesh2::Set_Data(){
-    int num_atoms = Sim->Num_Atoms();
-    Atom* ats = Sim->Atoms();
-    AMD::Vec3 center = Sim->Sim_Box()*(-0.5);
-    float radii[4] = {0.7,0.45,1.45,0.45};
-    AMD::Vec4 clrs[4] = {AMD::Vec4(0.95, 0.6, 0.55, 1.0),AMD::Vec4(0.05, 0.0, 0.95, 1.0),
-        AMD::Vec4(0.05, 0.0, 0.95, 1.0),AMD::Vec4(0.05, 0.0, 0.95, 1.0),};
-    float rad;
-    AMD::Vec4 clr;
-    AMD::Vec3 offset;
-    int vert_count = 0;
-    int idx_count = 0;
-    AMD::Vec3 pos;
-    for(int i = 0; i < num_atoms; i++){
-        int typ = ats[i].Get_Type();
-        offset = ats[i].Get_Coords() + center;
-        rad = radii[typ - 1];
-        clr = clrs[typ - 1];
-        Sphere sp(rad, offset, clr);
-        for(int j = 0; j< sp.num_verts(); j++){
-            m_verts[vert_count] = sp.basic_verts[j];
-            m_ambient[vert_count] = 3.0;
-            vert_count++;
-            }
-        for(int k = 0; k<sp.num_idx(); k++){
-            m_indices[idx_count] = i*sp.num_verts() + sp.indices[k];
-            idx_count++;
-        }
-    }
-    
-}
-
-
-
-
-void Atoms_Mesh2::Set_Shader(){
-    this->m_sh.bind();
-    
-    
-    
-}
-
-
-void Atoms_Mesh2::Set_Uniforms(){
-    this->m_sh.Set_Uniform_MVP();
-    this->m_sh.Set_Uniform_Normal();
-    
-}
-
-void Atoms_Mesh2::Set_Uniforms(Light_Src& src){
-    this->m_sh.Set_Uniform_MVP();
-    this->m_sh.Set_Uniform_Normal();
-    this->m_sh.Set_Uinform_LightSource(src);
-    
-}
-
-
-void Atoms_Mesh2::Draw(){
-    glBindBuffer(GL_ARRAY_BUFFER,m_amb_vbo);
-    glBufferData(GL_ARRAY_BUFFER, m_num_verts*sizeof(float), (void*)m_ambient, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER,0);
-    
-    this->m_VAO.bind();
-    this->m_IBO.bind();
-    glDrawElements(GL_TRIANGLES,m_IBO.get_num(), GL_UNSIGNED_INT,0);
-    
-    this->m_VAO.unbind();
-    this->m_IBO.unbind();
-}
 
 //#############  BOND MESH CLASS ###############################################
 Bond_Mesh::Bond_Mesh()
@@ -387,6 +156,10 @@ void Bond_Mesh::Set_Shader() {
     this->m_sh.bind();
 }
 
+void Bond_Mesh::Set_Uniforms(Light_Src& l_src) {
+    this->m_sh.Set_Uniform_MVP();
+}
+
 void Bond_Mesh::Set_Uniforms() {
     this->m_sh.Set_Uniform_MVP();
 }
@@ -403,6 +176,7 @@ void Bond_Mesh::Draw() {
 
 //##############################################################3
 Quad_Mesh::Quad_Mesh()
+:m_sh(shader_file)
 {
     Quad qd(2.0);
     VertexBuffer vb(qd.verts, qd.num_verts()*sizeof(AMD::Vertex_TX));
@@ -411,6 +185,7 @@ Quad_Mesh::Quad_Mesh()
 }
 
 Quad_Mesh::Quad_Mesh(AMD::Vec3 LL, AMD::Vec3 LR, AMD::Vec3 UR, AMD::Vec3 UL)
+:m_sh(shader_file)
 {
     Quad qd(LL,LR,UR,UL, "cw");
     VertexBuffer vb(qd.verts, qd.num_verts()*sizeof(AMD::Vertex_TX));
@@ -436,275 +211,35 @@ void Quad_Mesh::UnBind() {
     this->m_IBO.unbind();
 }
 
+void Quad_Mesh::Set_Shader(){this->m_sh.bind();}
 
 
-
-//============================================================================================
-
-Environment::Environment()
-:m_sh(shader_file)
-{
-    Environment_Cube cb;
-    VertexBuffer vb(cb.verts, cb.m_num_verts*sizeof(AMD::Vertex_TX));
-    m_VAO.Add_Vertex_Buffer(vb);
-    m_IBO.Gen_Buffer(cb.indices,cb.m_num_idx);
-    
-}
-
-Environment::~Environment(){}
-
-void Environment::Bind(){
-    this->m_sh.bind();
-    this->m_VAO.bind();
-    this->m_IBO.bind();
-}
-
-
-void Environment::UnBind(){
-    this->m_sh.unbind();
-    this->m_VAO.unbind();
-    this->m_IBO.unbind();
-}
-
-void Environment::Set_Uniforms(Light_Src& light){
-    AMD::Mat4 m_VP = op->Get_VP();
-    this->m_sh.Set_Uniform_Mat4("u_MVP", &m_VP[0][0]);
-    //this->m_sh.Set_Uinform_LightSource(light);
-}
-
-void Environment::Set_Shader(){
-    this->m_sh.bind();
-}
-
-void Environment::Draw(){
-    this->m_VAO.bind();
-    this->m_IBO.bind();
-    glDrawElements(GL_TRIANGLES,m_IBO.get_num(), GL_UNSIGNED_INT,0);
-    this->m_VAO.unbind();
-    this->m_IBO.unbind();
-}
-
-void Environment::Attach_Texture(Texture& tx){
-    m_sh.Set_Texture(m_sampler, tx);
-}
-
-
-
-
-
-
-
-//##########################################################################################
-
-Hist_2D_Grid_Mesh::Hist_2D_Grid_Mesh()
-:m_sh(shader_file)
-{}
-
-
-
-Hist_2D_Grid_Mesh::Hist_2D_Grid_Mesh(Hist_2D& hist)
-:m_sh(shader_file),  m_rows(hist.m_rows), m_row_width(hist.m_bin_width_z), m_cols(hist.m_cols), m_col_width(hist.m_bin_width_x)
-{
-    m_counts = (float**)malloc(m_rows*sizeof(float*));
-    for (int i =0; i<m_rows; i++){
-        m_counts[i] = (float*)malloc(m_cols*sizeof(float));
-    }
-    Grid gr(m_rows,m_row_width, m_cols,m_col_width);
-    for (int i = 0; i< gr.num_verts(); i++){
-        m_verts[i] = gr.verts[i].pos;
-    }
-    Set_Data(hist);
-    m_inst_vb_counts = m_VAO.Add_Dynamic_Buffer(sizeof(AMD::Vec3));
-    m_inst_vb_colors = m_VAO.Add_Dynamic_Buffer(sizeof(AMD::Vec4));
-    m_line_IBO.Gen_Buffer(gr.L_indices,gr.num_line_idx());
-    m_tri_IBO.Gen_Buffer(gr.T_indices,gr.num_tri_idx());
-}
-
-Hist_2D_Grid_Mesh::~Hist_2D_Grid_Mesh() {
-    for (int i = 0; i< m_rows; i++){
-        free(m_counts[i]);
-    }
-    free(m_counts);
-}
-
-
-
-void Hist_2D_Grid_Mesh::Set_Data(Hist_2D& hist){
-    int count = 0;
-    float min = hist.m_min;
-    float max = hist.m_max;
-    float val = 0;
-
-    // X AMU / Vol A^3 = (1.66*X) / Vol g/cm^3
-    float offset = -1.0*min; //-0.5*(min + max);
-    float ave;
-    for (int i = 0; i < m_rows; i++){
-        for ( int j = 0 ; j < m_cols; j++){
-            ave = hist.Get_Counts()[i][j]; 
-            val = offset +  ave;
-            m_verts[count].y = val;
-            float normed_h = (ave - min)/(max - min);
-            m_clrs[count] = AMD::Vec4(1.0 - normed_h, 0.0, normed_h, 1.0);
-            count ++;
-        }
-    }
-    m_num_bins = count;
-}
-
-
-void Hist_2D_Grid_Mesh::Clear(){
-    for (int i = 0; i < m_rows; i++){
-        for ( int j = 0 ; j < m_cols; j++){
-            m_counts[i][j] = 0;
-        }
-    }
-}
-
-
-unsigned int Hist_2D_Grid_Mesh::num_idx() {
-    return this->m_line_IBO.get_num();
-}
-
-void Hist_2D_Grid_Mesh::Bind() {
-    this->m_VAO.bind();
-    this->m_line_IBO.bind();
-}
-
-void Hist_2D_Grid_Mesh::UnBind() {
-    this->m_VAO.unbind();
-    this->m_line_IBO.unbind();
-}
-
-void Hist_2D_Grid_Mesh::Set_Uniforms(Light_Src& light){
-    this->m_sh.Set_Uniform_MVP();
-}
-
-void Hist_2D_Grid_Mesh::Set_Shader(){
-    this->m_sh.bind();
+void Quad_Mesh::Set_Uniforms(float dx, float dy){
+    AMD::Vec2 tmp(dx,dy);
+    m_sh.Set_Uniform_Vec2("rep", tmp);
     
 }
 
 
 
-void Hist_2D_Grid_Mesh::Draw(){
-    this->m_sh.Set_Uniform_Float("color_mod", 0.2);
-    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_colors);
-    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec4), (void*)m_clrs, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER,0);
-    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_counts);
-    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec3), (void*)m_verts, GL_DYNAMIC_DRAW);
-    this->m_VAO.bind();
-    this->m_line_IBO.bind();
-    glDrawElements(GL_LINES, m_line_IBO.get_num(), GL_UNSIGNED_INT,0);
-    this->m_line_IBO.unbind();
-    this->m_sh.Set_Uniform_Float("color_mod", 1.0);
-    m_tri_IBO.bind();
-    glDrawElements(GL_TRIANGLES,m_tri_IBO.get_num(), GL_UNSIGNED_INT,0);
-    this->m_VAO.unbind();
-    this->m_tri_IBO.unbind();
+void Quad_Mesh::Set_Uniforms(){}
+
+void Quad_Mesh::Set_Uniforms(Light_Src& l_src){}
+
+void Quad_Mesh::Attach_Texture(Texture2D& tx){
+    //m_sh.Set_Texture(m_sampler, tx);
 }
 
 
 
-
-
-Hist_2D_Bar_Mesh::Hist_2D_Bar_Mesh()
-:m_sh(shader_file)
-{}
-
-Hist_2D_Bar_Mesh::Hist_2D_Bar_Mesh(Hist_2D &hist)
-:m_sh(shader_file), m_cols(hist.m_cols), m_rows(hist.m_rows)
-{
-    m_counts = (float**)malloc(m_rows*sizeof(float*));
-    for (int i =0; i<m_rows; i++){
-        m_counts[i] = (float*)malloc(m_cols*sizeof(float));
-    }
-    Grid gr(m_rows,2.0, m_cols, 2.0);
-    for (int i = 0; i< gr.num_verts(); i++){
-        m_coords[i] = gr.verts[i].pos;
-    }
-    Set_Data(hist);
-    Cube cb(0.6*2.715);
-    VertexBuffer vb(cb.verts, cb.num_verts()*sizeof(AMD::Vertex_TX));
-    m_VAO.Add_Vertex_Buffer(vb);
-    m_IBO.Gen_Buffer(cb.indices,cb.num_idx());
-    m_inst_vb_counts = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec3));
-    m_inst_vb_colors = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec4));
-}
-
-Hist_2D_Bar_Mesh::~Hist_2D_Bar_Mesh()
-{ 
-    for (int i = 0; i< m_rows; i++){
-        free(m_counts[i]);
-    }
-    free(m_counts);
-}
-
-void Hist_2D_Bar_Mesh::Set_Data(float **data, int num_x, int num_z) { 
-    return;
-}
-
-void Hist_2D_Bar_Mesh::Set_Data(Hist_2D &hist) { 
-    int count = 0;
-    float min = hist.m_min;
-    float max = hist.m_max;
-    float val = 0;
-
-    float mod = (0.5*m_rows)/(max - min);
-    float offset = -0.5*mod*(min + max);
-    float ave;
-    for (int i = 0; i < m_rows; i++){
-        for ( int j = 0 ; j < m_cols; j++){
-            ave = hist.Get_Counts()[i][j];
-            val = offset +  mod*ave;
-            m_coords[count].y = ave;
-            float normed_h = (ave - min)/(max - min);
-            m_colors[count] = AMD::Vec4(1.5*normed_h, 0.0 ,1.5*(1.0 - normed_h), 1.0);
-            count ++;
-        }
-    }
-    m_num_bins = count;
-}
-
-void Hist_2D_Bar_Mesh::Set_Uniforms(Light_Src& light){
-    this->m_sh.Set_Uniform_MVP();
-}
-
-void Hist_2D_Bar_Mesh::Set_Shader(){
-    this->m_sh.bind();
-    
-}
-
-
-
-void Hist_2D_Bar_Mesh::Draw() {
-    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_counts);
-    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec3), (void*)m_coords, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_colors);
-    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec4), (void*)m_colors, GL_DYNAMIC_DRAW);
+void Quad_Mesh::Draw() {
     this->m_VAO.bind();
     this->m_IBO.bind();
-    glDrawElementsInstanced(GL_TRIANGLES,m_IBO.get_num(), GL_UNSIGNED_INT,0, m_num_bins);
+    glDrawElements(GL_TRIANGLES,m_IBO.get_num(),GL_UNSIGNED_INT,0);
     this->m_VAO.unbind();
     this->m_IBO.unbind();
 }
 
-void Hist_2D_Bar_Mesh::Clear() { 
-    for (int i = 0; i < m_rows; i++){
-        for ( int j = 0 ; j < m_cols; j++){
-            m_counts[i][j] = 0;
-        }
-    }
-}
-
-unsigned int Hist_2D_Bar_Mesh::Num_Points() {
-    return m_num_bins;
-}
-
-
-void Hist_2D_Bar_Mesh::Center() {
-    op->m_Cam.Look_At(m_coords[0]);
-}
 
 
 //###########Voxel Mesh Class##########################
@@ -832,6 +367,12 @@ void Voxel_Mesh::Set_Uniforms(){
     this->m_sh.Set_Uniform_Vec3("dim", m_box_dims);
 }
 
+
+
+void Voxel_Mesh::Set_Uniforms(Light_Src& l_src){
+    this->m_sh.Set_Uniform_MVP();
+    this->m_sh.Set_Uniform_Vec3("dim", m_box_dims);
+}
 void Voxel_Mesh::Set_Shader(){
     this->m_sh.bind();
     
@@ -932,7 +473,7 @@ void Voxel_Mesh2::Set_Data(TOPCon &hist) {
     for ( int i = 0; i< m_depth; i++){
         for (int j = 0; j < m_rows; j++){
             for ( int k = 0 ; k < m_cols; k++){
-                m_counts[count] = Data[i][j][k].value / 2.0;
+                m_counts[count] = Data[i][j][k].value / (max - min);
                 m_centers[count] = Data[i][j][k].Get_Center() - m_offset;
                 count++;
             }
@@ -959,6 +500,13 @@ void Voxel_Mesh2::Set_Data(PinHole& ph){
 
 
 void Voxel_Mesh2::Set_Uniforms(){
+    this->m_sh.Set_Uniform_MVP();
+    this->m_sh.Set_Uniform_Vec3("dim", m_box_dims);
+}
+
+
+
+void Voxel_Mesh2::Set_Uniforms(Light_Src& l_src){
     this->m_sh.Set_Uniform_MVP();
     this->m_sh.Set_Uniform_Vec3("dim", m_box_dims);
 }
@@ -1676,6 +1224,12 @@ void Grid_3D::Set_Uniforms(){
     this->m_sh.Set_Uniform_MVP();
 }
 
+
+
+void Grid_3D::Set_Uniforms(Light_Src& l_src){
+    this->m_sh.Set_Uniform_MVP();
+}
+
 void Grid_3D::Set_Shader(){
     this->m_sh.bind();
     
@@ -1871,6 +1425,12 @@ void Sphere_Mesh::Set_Uniforms(){
 }
 
 
+void Sphere_Mesh::Set_Uniforms(Light_Src& l_src){
+    this->m_sh.Set_Uniform_MVP();
+    this->m_sh.Set_Uniform_Normal();
+    
+}
+
 void Sphere_Mesh::Draw(){
     glBindBuffer(GL_ARRAY_BUFFER,m_offset_vbo);
     glBufferData(GL_ARRAY_BUFFER, m_num_sp*sizeof(AMD::Vec3), (void*)m_offsets, GL_DYNAMIC_DRAW);
@@ -1932,6 +1492,11 @@ void Vector_Mesh::Set_Uniforms(){
 }
 
 
+void Vector_Mesh::Set_Uniforms(Light_Src& l_src){
+    this->m_sh.Set_Uniform_MVP();
+    
+}
+
 void Vector_Mesh::Draw(){
     glBindBuffer(GL_ARRAY_BUFFER,m_pos_vbo);
     glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec3), (void*)m_pos, GL_DYNAMIC_DRAW);
@@ -1986,6 +1551,12 @@ void Sim_Box_Mesh::Set_Shader(){
 
 
 void Sim_Box_Mesh::Set_Uniforms(){
+    this->m_sh.Set_Uniform_MVP();
+    
+}
+
+
+void Sim_Box_Mesh::Set_Uniforms(Light_Src& l_src){
     this->m_sh.Set_Uniform_MVP();
     
 }
@@ -2125,6 +1696,11 @@ void Wire_Frame::Set_Uniforms(){
     this->m_sh.Set_Uniform_Vec2("MM", Min_Max);
 }
 
+
+void Wire_Frame::Set_Uniforms(Light_Src& l_src){
+    this->m_sh.Set_Uniform_MVP();
+    this->m_sh.Set_Uniform_Vec2("MM", Min_Max);
+}
 void Wire_Frame::Set_Shader(){
     this->m_sh.bind();
     
@@ -2144,6 +1720,349 @@ void Wire_Frame::Draw(){
 
 
 
+Axis::Axis(char axis, float lo, float high, AMD::Vec3 start,AMD::Vec3 end, int num_ticks, const char* plane, const char* type)
+:m_dir(Get_Basis(axis)) ,m_origin(start), m_num_ticks(num_ticks),m_lo(lo),m_range(high - lo), m_data_type(type)
+{
+    AMD::Vec3 tmp = end - start;
+    m_length = tmp.dot(m_dir);
+    m_plane[0] = plane[0]; m_plane[1] = plane[1];
+}
+
+
+Axis::Axis(char axis, float* data,int num_vals, AMD::Vec3 start,AMD::Vec3 end, int num_ticks, const char* plane, const char* type)
+:m_dir(Get_Basis(axis)) ,m_origin(start), m_num_ticks(num_ticks), m_data_type(type)
+{
+    AMD::Vec3 tmp = end - start;
+    m_length = tmp.dot(m_dir);
+    m_plane[0] = plane[0]; m_plane[1] = plane[1];
+    float min = 1000.0; float max = -1000.0;
+    for (int i = 0; i < num_vals; i++){
+        min = AMD::Min(min, data[i]);
+        max = AMD::Max(max, data[i]);
+    }
+    m_lo = min;
+    m_range = max - min;
+}
+
+Axis::~Axis(){}
+
+
+
+void Axis::Set_Values(){
+    if(m_num_ticks == 0){std::cout << "class Axis: number of ticks == 0! \n"; exit(27);}
+    if(m_num_ticks > 25){std::cout << "class Axis: number of ticks > 25! \n"; exit(27);}
+    
+    float dx = m_range/m_num_ticks;
+    float val = m_lo;
+    for ( int i = 0; i<m_num_ticks; i++){
+        m_values[i] = val;
+        val+=dx;
+    }
+    
+}
+
+
+void Axis::Set_Positions(){
+    if(m_num_ticks == 0){std::cout << "class Axis: number of ticks == 0! \n"; exit(27);}
+    if(m_num_ticks > 25){std::cout << "class Axis: number of ticks > 25! \n"; exit(27);}
+    
+    float dx = m_length/m_num_ticks;
+    AMD::Vec3 tmp;
+    for ( int i = 0; i<m_num_ticks; i++){
+        tmp = m_dir*(i*dx);
+        m_positions[i] = m_origin + tmp;
+    }
+    
+}
+
+
+
+AMD::Vec3* Axis::Get_Positions(){
+    return (AMD::Vec3*)m_positions;
+}
+
+
+float* Axis::Get_Values(){
+    return m_values;
+}
+
+void Axis::Draw(){
+    Text_Mesh text;
+    
+    text.Render_Tick_Labels(m_positions, m_values, m_num_ticks, 2.0, m_plane);
+    
+}
+
+
+
+//============================================================================================
+
+Environment::Environment()
+:m_sh(shader_file)
+{
+    Environment_Cube cb;
+    VertexBuffer vb(cb.verts, cb.m_num_verts*sizeof(AMD::Vertex_TX));
+    m_VAO.Add_Vertex_Buffer(vb);
+    m_IBO.Gen_Buffer(cb.indices,cb.m_num_idx);
+    
+}
+
+Environment::~Environment(){}
+
+void Environment::Bind(){
+    this->m_sh.bind();
+    this->m_VAO.bind();
+    this->m_IBO.bind();
+}
+
+
+void Environment::UnBind(){
+    this->m_sh.unbind();
+    this->m_VAO.unbind();
+    this->m_IBO.unbind();
+}
+
+void Environment::Set_Uniforms(Light_Src& light){
+    AMD::Mat4 m_VP = op->Get_VP();
+    this->m_sh.Set_Uniform_Mat4("u_MVP", &m_VP[0][0]);
+    //this->m_sh.Set_Uinform_LightSource(light);
+}
+
+void Environment::Set_Shader(){
+    this->m_sh.bind();
+}
+
+void Environment::Draw(){
+    this->m_VAO.bind();
+    this->m_IBO.bind();
+    glDrawElements(GL_TRIANGLES,m_IBO.get_num(), GL_UNSIGNED_INT,0);
+    this->m_VAO.unbind();
+    this->m_IBO.unbind();
+}
+
+void Environment::Attach_Texture(Texture& tx){
+    m_sh.Set_Texture(m_sampler, tx);
+}
+
+
+
+
+
+
+
+//##########################################################################################
+
+Hist_2D_Grid_Mesh::Hist_2D_Grid_Mesh()
+:m_sh(shader_file)
+{}
+
+
+
+Hist_2D_Grid_Mesh::Hist_2D_Grid_Mesh(Hist_2D& hist)
+:m_sh(shader_file),  m_rows(hist.m_rows), m_row_width(hist.m_bin_width_z), m_cols(hist.m_cols), m_col_width(hist.m_bin_width_x)
+{
+    m_counts = (float**)malloc(m_rows*sizeof(float*));
+    for (int i =0; i<m_rows; i++){
+        m_counts[i] = (float*)malloc(m_cols*sizeof(float));
+    }
+    Grid gr(m_rows,m_row_width, m_cols,m_col_width);
+    for (int i = 0; i< gr.num_verts(); i++){
+        m_verts[i] = gr.verts[i].pos;
+    }
+    Set_Data(hist);
+    m_inst_vb_counts = m_VAO.Add_Dynamic_Buffer(sizeof(AMD::Vec3));
+    m_inst_vb_colors = m_VAO.Add_Dynamic_Buffer(sizeof(AMD::Vec4));
+    m_line_IBO.Gen_Buffer(gr.L_indices,gr.num_line_idx());
+    m_tri_IBO.Gen_Buffer(gr.T_indices,gr.num_tri_idx());
+}
+
+Hist_2D_Grid_Mesh::~Hist_2D_Grid_Mesh() {
+    for (int i = 0; i< m_rows; i++){
+        free(m_counts[i]);
+    }
+    free(m_counts);
+}
+
+
+
+void Hist_2D_Grid_Mesh::Set_Data(Hist_2D& hist){
+    int count = 0;
+    float min = hist.m_min;
+    float max = hist.m_max;
+    float val = 0;
+
+    // X AMU / Vol A^3 = (1.66*X) / Vol g/cm^3
+    float offset = -1.0*min; //-0.5*(min + max);
+    float ave;
+    for (int i = 0; i < m_rows; i++){
+        for ( int j = 0 ; j < m_cols; j++){
+            ave = hist.Get_Counts()[i][j]; 
+            val = offset +  ave;
+            m_verts[count].y = val;
+            float normed_h = (ave - min)/(max - min);
+            m_clrs[count] = AMD::Vec4(1.0 - normed_h, 0.0, normed_h, 1.0);
+            count ++;
+        }
+    }
+    m_num_bins = count;
+}
+
+
+void Hist_2D_Grid_Mesh::Clear(){
+    for (int i = 0; i < m_rows; i++){
+        for ( int j = 0 ; j < m_cols; j++){
+            m_counts[i][j] = 0;
+        }
+    }
+}
+
+
+unsigned int Hist_2D_Grid_Mesh::num_idx() {
+    return this->m_line_IBO.get_num();
+}
+
+void Hist_2D_Grid_Mesh::Bind() {
+    this->m_VAO.bind();
+    this->m_line_IBO.bind();
+}
+
+void Hist_2D_Grid_Mesh::UnBind() {
+    this->m_VAO.unbind();
+    this->m_line_IBO.unbind();
+}
+
+void Hist_2D_Grid_Mesh::Set_Uniforms(Light_Src& light){
+    this->m_sh.Set_Uniform_MVP();
+}
+
+void Hist_2D_Grid_Mesh::Set_Shader(){
+    this->m_sh.bind();
+    
+}
+
+
+
+void Hist_2D_Grid_Mesh::Draw(){
+    this->m_sh.Set_Uniform_Float("color_mod", 0.2);
+    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_colors);
+    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec4), (void*)m_clrs, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_counts);
+    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec3), (void*)m_verts, GL_DYNAMIC_DRAW);
+    this->m_VAO.bind();
+    this->m_line_IBO.bind();
+    glDrawElements(GL_LINES, m_line_IBO.get_num(), GL_UNSIGNED_INT,0);
+    this->m_line_IBO.unbind();
+    this->m_sh.Set_Uniform_Float("color_mod", 1.0);
+    m_tri_IBO.bind();
+    glDrawElements(GL_TRIANGLES,m_tri_IBO.get_num(), GL_UNSIGNED_INT,0);
+    this->m_VAO.unbind();
+    this->m_tri_IBO.unbind();
+}
+
+
+
+
+
+Hist_2D_Bar_Mesh::Hist_2D_Bar_Mesh()
+:m_sh(shader_file)
+{}
+
+Hist_2D_Bar_Mesh::Hist_2D_Bar_Mesh(Hist_2D &hist)
+:m_sh(shader_file), m_cols(hist.m_cols), m_rows(hist.m_rows)
+{
+    m_counts = (float**)malloc(m_rows*sizeof(float*));
+    for (int i =0; i<m_rows; i++){
+        m_counts[i] = (float*)malloc(m_cols*sizeof(float));
+    }
+    Grid gr(m_rows,2.0, m_cols, 2.0);
+    for (int i = 0; i< gr.num_verts(); i++){
+        m_coords[i] = gr.verts[i].pos;
+    }
+    Set_Data(hist);
+    Cube cb(0.6*2.715);
+    VertexBuffer vb(cb.verts, cb.num_verts()*sizeof(AMD::Vertex_TX));
+    m_VAO.Add_Vertex_Buffer(vb);
+    m_IBO.Gen_Buffer(cb.indices,cb.num_idx());
+    m_inst_vb_counts = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec3));
+    m_inst_vb_colors = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec4));
+}
+
+Hist_2D_Bar_Mesh::~Hist_2D_Bar_Mesh()
+{ 
+    for (int i = 0; i< m_rows; i++){
+        free(m_counts[i]);
+    }
+    free(m_counts);
+}
+
+void Hist_2D_Bar_Mesh::Set_Data(float **data, int num_x, int num_z) { 
+    return;
+}
+
+void Hist_2D_Bar_Mesh::Set_Data(Hist_2D &hist) { 
+    int count = 0;
+    float min = hist.m_min;
+    float max = hist.m_max;
+    float val = 0;
+
+    float mod = (0.5*m_rows)/(max - min);
+    float offset = -0.5*mod*(min + max);
+    float ave;
+    for (int i = 0; i < m_rows; i++){
+        for ( int j = 0 ; j < m_cols; j++){
+            ave = hist.Get_Counts()[i][j];
+            val = offset +  mod*ave;
+            m_coords[count].y = ave;
+            float normed_h = (ave - min)/(max - min);
+            m_colors[count] = AMD::Vec4(1.5*normed_h, 0.0 ,1.5*(1.0 - normed_h), 1.0);
+            count ++;
+        }
+    }
+    m_num_bins = count;
+}
+
+void Hist_2D_Bar_Mesh::Set_Uniforms(Light_Src& light){
+    this->m_sh.Set_Uniform_MVP();
+}
+
+void Hist_2D_Bar_Mesh::Set_Shader(){
+    this->m_sh.bind();
+    
+}
+
+
+
+void Hist_2D_Bar_Mesh::Draw() {
+    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_counts);
+    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec3), (void*)m_coords, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,m_inst_vb_colors);
+    glBufferData(GL_ARRAY_BUFFER, m_num_bins*sizeof(AMD::Vec4), (void*)m_colors, GL_DYNAMIC_DRAW);
+    this->m_VAO.bind();
+    this->m_IBO.bind();
+    glDrawElementsInstanced(GL_TRIANGLES,m_IBO.get_num(), GL_UNSIGNED_INT,0, m_num_bins);
+    this->m_VAO.unbind();
+    this->m_IBO.unbind();
+}
+
+void Hist_2D_Bar_Mesh::Clear() { 
+    for (int i = 0; i < m_rows; i++){
+        for ( int j = 0 ; j < m_cols; j++){
+            m_counts[i][j] = 0;
+        }
+    }
+}
+
+unsigned int Hist_2D_Bar_Mesh::Num_Points() {
+    return m_num_bins;
+}
+
+
+void Hist_2D_Bar_Mesh::Center() {
+    op->m_Cam.Look_At(m_coords[0]);
+}
+
+
 /*
 void Wire_Frame::Draw(){
     
@@ -2159,6 +2078,45 @@ void Wire_Frame::Draw(){
 }
 */
 
+
+
+/*
+void Atoms_Mesh::Sort(char n){
+    AMD::Vec3 dir = Get_Basis(n);
+    AMD::Vec3 box = Sim->Sim_Box();
+    int num_slices = ceil(box.y/1.35748);
+    AMD::Vec3 slices[num_slices][1000];
+    int types[num_slices][1000];
+    int counts[num_slices];
+    int prev = m_num_atoms;
+    for(int n = 0; n< num_slices; n++){
+        counts[n] = 0;
+    }
+    for(int i = 0; i < m_num_atoms; i++){
+        AMD::Vec3 coords = m_offsets[i] + 0.5*box;
+        int r_id = floor(coords.y/1.3575);
+        int c_id = counts[r_id];
+        slices[r_id][c_id] = m_offsets[i];
+        types[r_id][c_id] = m_radii[i];
+        counts[r_id] ++;
+        
+    }
+    
+    int count = 0;
+    for(int i = 0; i < num_slices - 2; i++){
+        for (int j = 0; j < counts[i]; j++){
+            m_offsets[count] = slices[i][j];
+            m_radii[count] = types[i][j];
+            count ++;
+        }
+    }
+    
+    if(count != prev){
+        ;
+    }
+    m_num_atoms = count;
+}
+*/
 
 
 

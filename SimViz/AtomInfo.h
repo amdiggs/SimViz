@@ -28,10 +28,9 @@ inline int El_Hash(const char* el)
 }
 
 
-inline atom_info Get_Atom_Info(const char* el)
+inline atom_info Get_Atom_Info(int hash)
 {
     atom_info ret;
-    int hash = El_Hash(el);
     switch (hash) {
         case 72:
             ret.rad = 0.5;

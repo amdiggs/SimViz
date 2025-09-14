@@ -42,6 +42,10 @@ class Hist_2D_Grid_Mesh;
 class Hist_2D;
 class PinHole;
 
+//Render:
+//there should only be one.
+//should have a window and gui
+//clear->draw->poll
 
 class Renderer{
 private:
@@ -76,40 +80,27 @@ class UI_Window{
 private:
     GLFWwindow* m_window;
     ImGuiIO& m_io;
-    AMD::Vec4 m_cc;
-    AMD::Vec4 Ob_clr;
  
-    float view_x, view_y, view_z;
-    float m_x, m_y;
-    int display_w, display_h;
-    float  ui_x, ui_y;
     const char* m_version = "#version 150";
     float* m_items[5];
     const char* m_names[5];
     int num_items = 0;
-    float projection[4] = {1.0, -3.0, 3.0, 3.0};
-    
-    
+    UI_Window();
+    UI_Window(const UI_Window&) = delete;
+    UI_Window operator=(const UI_Window&) = delete;
+    static UI_Window inst;
     
 public:
-    UI_Window(float pos_x, float pos_y,GLFWwindow* window);
     ~UI_Window();
-    
-    
-    void Simple_window(Light_Src& l);
-    void Simple_window(Light_Src& l, PinHole& ph);
+    void Init(GLFWwindow* win);
+    static UI_Window* Get();
+    int display_w, display_h;
+    void Simple_window();
     void render() const;
     void NewFrame() const;
     
     void Push_Item(const char* item_name, float* item);
-    
-    AMD::Vec4& get_color();
-    
-    
-    void mouse_drag(AMD::Vec3& vec);
-    void Write_Buffer(std::string file_name);
-    
-    
+    void Write_Buffer(const char* file_name);
 };
 
 

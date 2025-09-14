@@ -54,21 +54,13 @@ void free(void* ptr){
 std::default_random_engine gen;
 std::uniform_real_distribution<float> rnd(0, 1);
 
-Renderer rend(1800,1000, "Volume Data");
-UI_Window ui(0.0,0.0,rend.Get_Window());
+Renderer rend(1800,1000, "SimViz");
 
 //init Operator and Light Source
 extern Operator* op;
 extern Simulation* Sim;
-
 Light_Src l_src;
-//const char* atom_file = "/Users/diggs/Desktop/VolumeData/Dump-Files/bch.dump";
 
-const float f_vals[4][16] = {{0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0},
-    {0.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0},
-    {1.0,1.0,1.0,1.0, 1.0,1.0,1.0,1.0, 1.0,1.0,1.0,1.0, 1.0,1.0,0.0,1.0},
-    {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}
-};
 float*** Build_Arr(int depth, int rows, int cols);
 void Delete_Arr(float*** arr,int depth, int rows);
 void Draw_Vox_Sphere();
@@ -81,22 +73,29 @@ void Iso_Test(float bw);
 void Draw_Wire();
 void Draw_Rho();
 void Draw_Atoms();
+void Draw_Blank();
 
-//const char* atom_file = "/Users/diggs/Desktop/TOPCon/OUT-FILES/Del-11-11-23/H-delete-351.dump";
-//const char* atom_file = "/Users/diggs/Desktop/VolumeData/Dump-Files/IrO2.dump";
-const char* atom_file = "/Users/diggs/Desktop/VolumeData/Dump-Files/10001.dump";
+const char* atom_file = "./Other/10001.dump";
 
 const char* rho_file = "/Users/diggs/Desktop/VolumeData/out-Q0-rho-10-01-24/Q0-rho.dat";
 
 int main(int argc, const char * argv[]) {
-    Sim->Init(atom_file);
-  
-    Draw_Vox_Pinhole(2.715);
-    Draw_Atoms();
+    const char* FT = "lammps";
+    Sim->Init(atom_file, FT);
+    Draw_Blank();
     return 0;
 }
 
-
+// I want to start with an empty window with UI side bar.
+// User needs to select a file, file type, calculation.
+// User should be able to render any combination of 
+// Atoms, voxels, voxelized atoms, bonds, iso-surface, voxel wire frame.
+//
+//It should look like 
+//main{
+//Renderer->Draw(); so then Draw() should have a list of function pointers that have specific draw calls.
+//all func ptrs should be void. Sim has all info so no arguments should be needed.
+//
 
 void Draw_Atoms(){
     
@@ -112,16 +111,7 @@ void Draw_Atoms(){
             ats.Set_Uniforms(l_src);
             op->need_update = false;
         }
-        
-        //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src);
-        
-        //Framebuffer/Shadowmap pass
-    
         rend.Draw_Pass();
-        
-        
         
         sbm.Set_Shader();
         sbm.Draw();
@@ -130,7 +120,6 @@ void Draw_Atoms(){
         ats.Draw();
         
         
-        ui.render();
         rend.poll();
         
         if (Sim->Need_Update()) {
@@ -143,6 +132,18 @@ void Draw_Atoms(){
 }
 
 
+
+
+void Draw_Blank(){
+
+    while (!rend.is_open()) {
+        //UI stuff
+        
+        rend.Draw_Pass();
+        rend.poll();
+    }
+    
+}
 
 
 
@@ -182,8 +183,6 @@ void Draw_Atoms(){
          }
          
          //UI stuff
-         ui.NewFrame();
-         ui.Simple_window(l_src);
          
          
          rend.Draw_Pass();
@@ -196,7 +195,6 @@ void Draw_Atoms(){
          vx.Draw();
         
          
-         ui.render();
          rend.poll();
          
          if (Sim->Need_Update()) {
@@ -244,8 +242,6 @@ void Draw_Rho(){
         }
         
         //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src);
         
         //Framebuffer/Shadowmap pass
         //sm.Set_MLP(l_src);
@@ -266,7 +262,6 @@ void Draw_Rho(){
         
         
         
-        ui.render();
         rend.poll();
          
     }
@@ -286,9 +281,6 @@ void Draw_Vox_Pinhole(float bw){
     vx.Set_Data(ph);
     
     float v, si, ox;
-    ui.Push_Item("Pinhole Volume", &v);
-    ui.Push_Item("Num Si", &si);
-    ui.Push_Item("Num O", &ox);
     v = ph.Get_Volume();
     si = (float)ph.Get_Num_Si();
     ox = (float)ph.Get_Num_Ox();
@@ -302,8 +294,6 @@ void Draw_Vox_Pinhole(float bw){
         }
         
         //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src, ph);
         
         
         rend.Draw_Pass();
@@ -312,7 +302,6 @@ void Draw_Vox_Pinhole(float bw){
         vx.Draw();
        
         
-        ui.render();
         rend.poll();
         
         if (Sim->Need_Update()) {
@@ -345,7 +334,6 @@ void Draw_Iso(float bw){
     iso.Set_Data(hist);
     
     float del;
-    ui.Push_Item("Pinhole Surface area", &del);
     del = iso.Get_Area();
     std::ofstream O_file;
     const char* out_file_name = "/Users/diggs/Desktop/Ph-Area-100000.txt";
@@ -359,10 +347,6 @@ void Draw_Iso(float bw){
             op->need_update = false;
         }
         
-        //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src);
-        //ui.log_window(hist);
         
         //Framebuffer/Shadowmap pass
         sm.Set_MLP(l_src);
@@ -379,7 +363,6 @@ void Draw_Iso(float bw){
         iso.Draw();
         
         
-        ui.render();
         rend.poll();
         
         if (Sim->Need_Update()) {
@@ -413,7 +396,6 @@ void Draw_Iso_Atoms(float bw){
     Bond_Mesh bm;
     bm.Set_Data();
     float del;
-    ui.Push_Item("Pinhole Surface area", &del);
     del = iso.Get_Area();
     while (!rend.is_open()) {
         //General stuff
@@ -425,10 +407,6 @@ void Draw_Iso_Atoms(float bw){
             op->need_update = false;
         }
         
-        //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src);
-        //ui.log_window(hist);
         
         //Framebuffer/Shadowmap pass
         //sm.Set_MLP(l_src);
@@ -451,7 +429,6 @@ void Draw_Iso_Atoms(float bw){
         iso.Draw();
         
         
-        ui.render();
         rend.poll();
         
         if (Sim->Need_Update()) {
@@ -505,8 +482,6 @@ void Iso_Test(float bw){
         }
         
         //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src);
         //ui.log_window(hist);
         
         //Framebuffer/Shadowmap pass
@@ -532,7 +507,6 @@ void Iso_Test(float bw){
         vm.Draw();
         gr.Set_Shader();
         gr.Draw();
-        ui.render();
         rend.poll();
         
         if (Sim->Need_Update()) {
@@ -558,8 +532,6 @@ void Draw_Wire(){
         }
         
         //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src);
         
         
         rend.Draw_Pass();
@@ -568,7 +540,6 @@ void Draw_Wire(){
         wf.Draw();
        
         
-        ui.render();
         rend.poll();
         
       
@@ -591,7 +562,7 @@ float*** Build_Arr(int depth, int rows, int cols){
         for(int r = 0; r< rows; r++){
             vals[d][r] = (float*)malloc(cols*sizeof(float));
             for(int c = 0; c<cols; c++){
-                vals[d][r][c] = f_vals[d][count];
+                vals[d][r][c] = rnd(gen);
                 count++;
             }
         }
@@ -627,8 +598,6 @@ void Draw_Vox_Sphere(){
         }
         
         //UI stuff
-        ui.NewFrame();
-        ui.Simple_window(l_src);
         
         
         rend.Draw_Pass();
@@ -637,7 +606,6 @@ void Draw_Vox_Sphere(){
         vx.Draw();
        
         
-        ui.render();
         rend.poll();
         
         if (Sim->Need_Update()) {

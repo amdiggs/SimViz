@@ -19,11 +19,11 @@ UNAME_S := $(shell uname -s)
 LINUX_GL_LIBS = -lGL
 
 #local Libs
-INC_PATHS = ../Math ./Resources ./Rendering ./SimViz ./SimViz/MyOpenCL
+INC_PATHS = ./Math ./Resources ./Rendering ./SimViz ./SimViz/MyOpenCL
 INC_PATHS += /opt/homebrew/Cellar/freetype/2.13.3/include/freetype2
-LIB_PATHS = ../Math
-LDFLAGS = $(addprefix -L,$(LIB_PATHS))
-LIBS = -lAMDmath
+LIB_PATHS = 
+#LDFLAGS = $(addprefix -L,$(LIB_PATHS))
+#LIBS = -lAMDmath
 
 #Platform includes and libs
 ifeq ($(UNAME_S), Linux) #LINUX
@@ -54,6 +54,9 @@ CXXFLAGS += $(IFLAGS)
 CFLAGS = $(CXXFLAGS)
 
 
+%.o:./Math/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
 %.o:./Rendering/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
@@ -67,9 +70,9 @@ all: $(TARGET)
 	@echo Built Objects
 $(TARGET): $(OBJS)
 	@echo "$(ECHO_MESSAGE)"
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SOURCES) $(LDFLAGS) $(LIBS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SOURCES) $(LDFLAGS) $(LIBS) > build_err.txt 2>&1
 
 .PHONY: clean
 
 clean:
-	rm -f $(TARGET)
+	rm -f *.o $(TARGET)

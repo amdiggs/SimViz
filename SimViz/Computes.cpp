@@ -12,6 +12,7 @@
 #include "FileIO.hpp"
 #include "MyOpenCL/ErrorLogging.h"
 #include "MyOpenCL/OpenCL_Funcs.h"
+#include "AtomInfo.h"
 extern Simulation* Sim;
 static Vox_Sphere sp;
 static AMD::Ivec3 dims;
@@ -426,8 +427,9 @@ void TOPCon::Compute_Density(float bin_width) {
 void TOPCon::Compute_Dist_Value(AMD::Vec3& coords, int type){
     
     // 1) computed distances to bin_edges
-    float radius = Sim->radii[type];
-    float mass = Sim->masses[type];
+    atom_info ai = Get_Atom_Info(type);
+    float radius = ai.rad;
+    float mass = 1.0;
     
     float r_scale = radius;
     float mass_frac = mass/sp.m_num_el;

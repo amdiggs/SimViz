@@ -35,12 +35,12 @@ private:
     unsigned int m_type;
     AMD::Vec3 m_coords;
     int m_num_neighbors;
-    Atom** m_neighbors = NULL;
+    Atom* m_neighbors[16];
     
 public:
     Atom();
-    Atom(std::string line);
     Atom(int _id, int _type, float x, float y, float z);
+    Atom(Atom_Line al);
     ~Atom();
     
     unsigned int Get_ID() const;
@@ -118,10 +118,9 @@ private:
     bool m_need_update = false;
     int m_num_bonds;
     
-    Dump* m_data;
-    Atom atoms[MAX_ATOMS];
+    //Dump* m_data;
+    Atom* atoms = NULL;
     AMD::Vec3* m_bonds=NULL;
-    
     //private functions
     void Set_Block(int start);
     void Update_Sim(char dir);
@@ -134,20 +133,12 @@ private:
     
     
     //needed for rendering
-    int neighbor_IDs[4*MAX_ATOMS][2];
+    //int neighbor_IDs[4*MAX_ATOMS][2];
 public:
-    
-    
-    void Init(const char* file);
+    void Init(const char* file, const char* ft);
     static Simulation* Get();
     ~Simulation();
-    
-    //Publicly accessable information
-    float radii[3] = {2.1, 1.6/2.0, 1.0/2.0};
-    float masses[3] = {28.0855, 15.9994, 1.008};
-    float cutoffs[3] = {2.8, 2.11, 1.824};
     AMD::Vec3 shift;
-    
     
     //Getters
     int Timestep();

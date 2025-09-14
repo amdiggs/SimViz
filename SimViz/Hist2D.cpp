@@ -6,6 +6,7 @@
 //
 
 #include "Hist2D.hpp"
+#include "AtomInfo.h"
 #include "Atomic.hpp"
 extern Simulation* Sim;
 
@@ -156,7 +157,7 @@ void Hist_2D::Compute_XY_Mass_Density(float bin_size) {
         if(tmp_col == m_cols || tmp_row == m_rows){
             ;
         }
-        m_counts[tmp_row][tmp_col] += Sim->masses[type_indx];
+        m_counts[tmp_row][tmp_col] += 1.0;
     }
     Set_MinMax();
 }
@@ -190,7 +191,7 @@ void Hist_2D::Compute_XY_Mass_Density(float bin_size, int type) {
         if(tmp_col == m_cols || tmp_row == m_rows){
             ;
         }
-        m_counts[tmp_row][tmp_col] += Sim->masses[type_indx];
+        m_counts[tmp_row][tmp_col] += 1.0;
     }
     Set_MinMax();
 }
@@ -276,8 +277,9 @@ void Hist_2D::Compute_XZ_Mass_Density(float bin_size, int type) {
 
 void Hist_2D::Get_Portions(AMD::Vec3& coords, int type, int row, float row_mod, int col, float col_mod){
     // 1) computed distances to bin_edges
-    float radius = Sim->radii[type];
-    float mass = Sim->masses[type];
+    atom_info ai = Get_Atom_Info(type);
+    float radius = ai.rad;
+    float mass = 1.0;
     
     float left = col*col_mod; float right = (col + 1)*col_mod;
     float bottom = row*row_mod; float top = (row + 1)*row_mod;
