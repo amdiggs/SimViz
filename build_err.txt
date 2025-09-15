@@ -26,27 +26,27 @@ In file included from ./Rendering/Meshes.cpp:17:
     int one[1][3] = {0,3,8};
                      ^~~~~
                      {    }
-./Rendering/Meshes.cpp:558:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
+./Rendering/Meshes.cpp:557:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
 :m_sh(shader_file), grid_sh(grid_shader_file),m_cut(0.25), m_count(0), vox_len(1.0, 1.0, 1.0)
                                               ^~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~
                                               m_count(0)   vox_len(1.0, 1.0, 1.0) m_cut(0.25)
-./Rendering/Meshes.cpp:573:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
+./Rendering/Meshes.cpp:572:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
 :m_sh(shader_file), grid_sh(grid_shader_file),m_cut(cut), m_count(0), vox_len(1.0, 1.0, 1.0)
                                               ^~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~
                                               m_count(0)  vox_len(1.0, 1.0, 1.0) m_cut(cut)
-./Rendering/Meshes.cpp:1724:66: warning: field 'm_lo' will be initialized after field 'm_range' [-Wreorder-ctor]
+./Rendering/Meshes.cpp:1723:66: warning: field 'm_lo' will be initialized after field 'm_range' [-Wreorder-ctor]
 :m_dir(Get_Basis(axis)) ,m_origin(start), m_num_ticks(num_ticks),m_lo(lo),m_range(high - lo), m_data_type(type)
                                                                  ^~~~~~~~ ~~~~~~~~~~~~~~~~~~
                                                                  m_range(high - lo) m_lo(lo)
-./Rendering/Meshes.cpp:1862:43: warning: field 'm_row_width' will be initialized after field 'm_cols' [-Wreorder-ctor]
+./Rendering/Meshes.cpp:1861:43: warning: field 'm_row_width' will be initialized after field 'm_cols' [-Wreorder-ctor]
 :m_sh(shader_file),  m_rows(hist.m_rows), m_row_width(hist.m_bin_width_z), m_cols(hist.m_cols), m_col_width(hist.m_bin_width_x)
                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~
                                           m_cols(hist.m_cols)              m_row_width(hist.m_bin_width_z)
-./Rendering/Meshes.cpp:1972:21: warning: field 'm_cols' will be initialized after field 'm_rows' [-Wreorder-ctor]
+./Rendering/Meshes.cpp:1971:21: warning: field 'm_cols' will be initialized after field 'm_rows' [-Wreorder-ctor]
 :m_sh(shader_file), m_cols(hist.m_cols), m_rows(hist.m_rows)
                     ^~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~
                     m_rows(hist.m_rows)  m_cols(hist.m_cols)
-./Rendering/Meshes.cpp:2007:11: warning: variable 'val' set but not used [-Wunused-but-set-variable]
+./Rendering/Meshes.cpp:2006:11: warning: variable 'val' set but not used [-Wunused-but-set-variable]
     float val = 0;
           ^
 In file included from ./Rendering/Meshes.cpp:8:
@@ -180,20 +180,14 @@ static void Print_Result(float* res, int num){
     int type_indx;
         ^
 2 warnings generated.
-./SimViz/FileIO.cpp:168:18: warning: unused variable 'count' [-Wunused-variable]
-    unsigned int count = 0;
-                 ^
-./SimViz/FileIO.cpp:167:10: warning: unused variable 'ws' [-Wunused-variable]
-    bool ws = true;
-         ^
-./SimViz/FileIO.cpp:438:2: warning: field 'init' will be initialized after field 'dump_num_atoms' [-Wreorder-ctor]
+./SimViz/FileIO.cpp:286:2: warning: field 'init' will be initialized after field 'dump_num_atoms' [-Wreorder-ctor]
 :init(false), dump_num_atoms(0), scale(1.0,1.0,1.0)
  ^~~~~~~~~~~  ~~~~~~~~~~~~~~~~~
  dump_num_atoms(0) init(false)
-./SimViz/FileIO.cpp:674:17: warning: unused variable 'out_file' [-Wunused-variable]
+./SimViz/FileIO.cpp:529:17: warning: unused variable 'out_file' [-Wunused-variable]
     const char* out_file = "/Users/diggs/Desktop/";
                 ^
-4 warnings generated.
+2 warnings generated.
 ./SimViz/Comp_Kernel.cpp:143:18: warning: unused variable 'table_ID' [-Wunused-variable]
     unsigned int table_ID = Hash(func_name);
                  ^
@@ -206,16 +200,16 @@ static bool comment(std::string str, std::string reg_ex){
  ~~~~~~~~~~~~~~~  ^~~~~~~~~~~~~~~ ~~~~~~~~~~~~~~
  m_num_atoms(0)   m_num_blocks(0) m_curr_block(0)
 1 warning generated.
-./SimViz/main.cpp:283:11: warning: variable 'v' set but not used [-Wunused-but-set-variable]
-    float v, si, ox;
-          ^
-./SimViz/main.cpp:283:14: warning: variable 'si' set but not used [-Wunused-but-set-variable]
-    float v, si, ox;
-             ^
-./SimViz/main.cpp:283:18: warning: variable 'ox' set but not used [-Wunused-but-set-variable]
+./SimViz/main.cpp:287:18: warning: variable 'ox' set but not used [-Wunused-but-set-variable]
     float v, si, ox;
                  ^
-./SimViz/main.cpp:398:11: warning: variable 'del' set but not used [-Wunused-but-set-variable]
+./SimViz/main.cpp:287:14: warning: variable 'si' set but not used [-Wunused-but-set-variable]
+    float v, si, ox;
+             ^
+./SimViz/main.cpp:287:11: warning: variable 'v' set but not used [-Wunused-but-set-variable]
+    float v, si, ox;
+          ^
+./SimViz/main.cpp:402:11: warning: variable 'del' set but not used [-Wunused-but-set-variable]
     float del;
           ^
 4 warnings generated.

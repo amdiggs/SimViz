@@ -108,7 +108,7 @@ private:
     // general info about simulation
     int m_timestep;
     int m_num_atoms;
-    AMD::Vec3 m_lattice[3];
+    AMD::Mat3 m_lattice;
     
     int m_num_blocks;
     int m_curr_block;

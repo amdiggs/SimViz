@@ -77,9 +77,9 @@ void Renderer::Draw_Pass(){
     glClearColor(CC[0], CC[1], CC[2], 0.0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glfwGetFramebufferSize(m_Window, &Ww, &Wh);
-    int dw =100;// Ww - ui->display_w;
-    int dh =100;// Wh - ui->display_h;
-    glViewport(ui->display_w, ui->display_h, dw, dh);
+    int dw = Ww - 2.0*ui->display_w;
+    int dh= 2.0*ui->display_h;
+    glViewport(ui->display_w,ui->display_w, dw, dh);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -90,8 +90,33 @@ void Renderer::Draw_Pass(){
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+void Renderer::Draw(){
+    for(int i = 0; i<num_meshes; i++){
+        meshes[i]->Set_Shader();
+        meshes[i]->Draw();
+    }
+}
 
 
+void Renderer::Push_Mesh(Mesh& m){
+    meshes[num_meshes] = &m;
+    num_meshes++;
+}
+
+void Renderer::Set_Uniforms(){
+    for(int i = 0; i<num_meshes; i++){
+        meshes[i]->Set_Uniforms();
+    }
+}
+
+
+void Renderer::Set_Uniforms(Light_Src& l_src){
+    op->Set();
+    for(int i = 0; i<num_meshes; i++){
+        meshes[i]->Set_Uniforms(l_src);
+    }
+    op->need_update = false;
+}
 
 
 int Renderer::is_open(){

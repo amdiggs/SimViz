@@ -164,8 +164,6 @@ void Get_Vals(std::string line, float* tmp, int* num){
 }
 
 String_List::String_List(std::string line){
-    bool ws = true;
-    unsigned int count = 0;
     unsigned int word_indx = 0;
     for(int i = 0; i < line.size(); i++){
         char word[100] = "";
@@ -272,156 +270,6 @@ char** Read_File(const char* file,int& num_blocks, int* block_idx, int& num_line
     return contents;
 }
 
-Data_2D::Data_2D(const char* file){
-    
-    std::ifstream infile(file, std::ios_base::in);
-    if (!infile.is_open()){
-        std::cout << "File did not open!!" << std::endl;
-        exit(9);
-    }
-    std::string line;
-    
-    int num_el = 0;
-    int count = 0;
-    bool num_el_set = false;
-    
-    float tmp[25];
-    while (std::getline(infile, line)) {
-        if (!match_comment(line)) {
-            if(!num_el_set){
-                num_el = Get_Num_El(line);
-            }
-            m_dat = (float**)realloc(m_dat, (count+1)*sizeof(float*));
-            m_dat[count] = (float*)malloc(num_el*sizeof(float));
-            Get_Vals(line, tmp, &num_el);
-            for(int i = 0; i < num_el; i++){
-                m_dat[count][i] = tmp[i];
-            }
-            
-            count++;
-            
-        }
-    }
-    
-    m_num_el = num_el;
-    m_num_rows = count;
-}
-
-
-
-Data_2D::~Data_2D(){
-    if(m_dat!=NULL){
-        for(int i = 0; i<m_num_rows; i++) {
-            free(m_dat[i]);
-        }
-        free(m_dat);
-    }
-}
-
-
-Data_3D::Data_3D(){}
-
-Data_3D::~Data_3D(){
-    if(init){
-        for (int i = 0; i<m_ny; i++) {
-            for(int j = 0; j < m_nz; j++){
-                free(m_dat[i][j]);
-            }
-            free(m_dat[i]);
-        }
-    }
-    free(m_dat);
-}
-
-
-Rho_Data_3D::Rho_Data_3D(){}
-
-Rho_Data_3D::~Rho_Data_3D(){
-    if(at_init){
-        free(at_types);
-        free(at_coords);
-    }
-}
-
-Rho_Data_3D Read_Charge_Density(const char* file){
-    Rho_Data_3D dat;
-    std::ifstream infile(file, std::ios_base::in);
-    if (!infile.is_open()){
-        std::cout << "File did not open!!" << std::endl;
-        exit(9);
-    }
-    
-    
-    std::string line;
-    int num_el = 0;
-    float tmp[20];
-    // first two lines ar comments third line is num ats
-    bool start = false;
-    while(!start){
-        std::getline(infile, line);
-        String_List str_lst(line);
-        start = match_number(str_lst[0]);
-    }
-    Get_Vals(line, tmp, &num_el);
-    int num_ats = tmp[0];
-    dat.num_ats = num_ats;
-    float b_to_A = 1.0; //0.529177;
-    //next three lines are ni ei for i = 1,2,3
-    std::getline(infile, line);
-    Get_Vals(line, tmp, &num_el);
-    dat.m_nx = round(tmp[0]);
-    dat.m_bin_widths[0] = tmp[1]*b_to_A;
-    std::getline(infile, line);
-    Get_Vals(line, tmp, &num_el);
-    dat.m_ny = round(tmp[0]);
-    dat.m_bin_widths[1] = tmp[2]*b_to_A;
-    std::getline(infile, line);
-    Get_Vals(line, tmp, &num_el);
-    dat.m_nz = round(tmp[0]);
-    dat.m_bin_widths[2] = tmp[3]*b_to_A;
-    
-    dat.at_coords = (AMD::Vec3*)malloc(num_ats*sizeof(AMD::Vec3));
-    dat.at_types = (float*)malloc(num_ats*sizeof(float));
-    dat.at_init = true;
-    for(int i = 0; i<num_ats;i++){
-        std::getline(infile, line);
-        Get_Vals(line, tmp, &num_el);
-        dat.at_types[i] = tmp[1];
-        dat.at_coords[i] = AMD::Vec3(tmp[2],tmp[3],tmp[4]);
-        
-    }
-    
-    
-    float* oneD = (float*)malloc(dat.m_nx*dat.m_ny*dat.m_nz*sizeof(float));
-    int count = 0;
-    while (std::getline(infile, line)) {
-            Get_Vals(line, tmp, &num_el);
-            for(int i = 0; i < num_el; i++){
-                oneD[count] = tmp[i];
-                count++;
-            }
-            
-            
-        }
-    
-    count = 0;
-    dat.m_dat = (float***)malloc(dat.m_nx*sizeof(float**));
-    for(int i = 0; i < dat.m_nx; i++){
-        dat.m_dat[i] = (float**)malloc(dat.m_ny*sizeof(float*));
-        for(int j = 0; j< dat.m_ny; j++){
-            dat.m_dat[i][j] = (float*)malloc(dat.m_nz*sizeof(float));
-            for(int k = 0; k < dat.m_nz; k++){
-                dat.m_dat[i][j][k] = oneD[count];
-                count++;
-                
-            }
-        }
-    }
-    dat.init = true;
-    free(oneD);
-    return dat;
-}
-
 void Set_Scale(AMD::Vec3* latt){
     for(int i = 0; i<3; i++){
         Scale.assign_col(i,latt[i]);
@@ -441,9 +289,7 @@ Dump::Dump()
 Dump& Dump::operator=(const Dump &other){
     this->timestep= other.timestep;
     this->dump_num_atoms= other.dump_num_atoms;
-    for(int i = 0; i<3; i++){
-        this->m_lattice[i] = other.m_lattice[i];
-    }
+    this->m_lattice = other.m_lattice;
     size_t at_sz = this->dump_num_atoms*sizeof(Atom_Line);
     this->Atom_Lines = (Atom_Line*)malloc(at_sz);
     for(int i = 0; i<dump_num_atoms;i++){
@@ -477,16 +323,18 @@ void Dump::Set_Lattice(std::ifstream& file_stream, size_t &pos){
                 if(j == i){vec[j] = l;}
                 else{vec[j] = 0.0;}
             }
-            this-> m_lattice[i] =vec;
+            this-> m_lattice.assign_row(i, vec);
         }
         else if(file_type == jdftx){
             x = atof(vals.m_words[0].c_str());
             y = atof(vals.m_words[1].c_str());
             z = atof(vals.m_words[2].c_str());
             AMD::Vec3 vec(x,y,z);
-            this->m_lattice[i] = vec;
+            this-> m_lattice.assign_col(i, vec);
         }
     }
+    Scale = this->m_lattice;
+    Scale.print();
     pos = file_stream.tellg();
 }
 
@@ -501,15 +349,22 @@ void Dump::Set_Params_LAMMPS(std::string line){
 
 
 
-void Dump::Set_Params_JDFTX(std::string line){
-    std::stringstream ss;
-    ss << line;
-    std::string out;
-    while(ss >> out){
-        if(out.compare("xs") == 0){coords_type=lattice;}
+void Dump::Set_Params_JDFTX(std::string line){}
+
+void Dump::Init(std::ifstream& file_stream, size_t& pos){ 
+    switch (file_type) {
+        case lammps:
+            Set_Data_LAMMPS(file_stream, pos);
+            break;
+        case qe:
+            break;
+        case jdftx:
+            Set_Data_JDFTX(file_stream, pos);
+            break;
+        default:
+            break;
     }
 }
-void Dump::Init(std::ifstream& file_stream, size_t& pos){}
 
 void Dump::Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos){
     std::string line;
@@ -686,3 +541,153 @@ void Write_Dat(float* dat, int num, const char* file_name){
     
 }
 
+
+Data_2D::Data_2D(const char* file){
+    
+    std::ifstream infile(file, std::ios_base::in);
+    if (!infile.is_open()){
+        std::cout << "File did not open!!" << std::endl;
+        exit(9);
+    }
+    std::string line;
+    
+    int num_el = 0;
+    int count = 0;
+    bool num_el_set = false;
+    
+    float tmp[25];
+    while (std::getline(infile, line)) {
+        if (!match_comment(line)) {
+            if(!num_el_set){
+                num_el = Get_Num_El(line);
+            }
+            m_dat = (float**)realloc(m_dat, (count+1)*sizeof(float*));
+            m_dat[count] = (float*)malloc(num_el*sizeof(float));
+            Get_Vals(line, tmp, &num_el);
+            for(int i = 0; i < num_el; i++){
+                m_dat[count][i] = tmp[i];
+            }
+            
+            count++;
+            
+        }
+    }
+    
+    m_num_el = num_el;
+    m_num_rows = count;
+}
+
+
+
+Data_2D::~Data_2D(){
+    if(m_dat!=NULL){
+        for(int i = 0; i<m_num_rows; i++) {
+            free(m_dat[i]);
+        }
+        free(m_dat);
+    }
+}
+
+
+Data_3D::Data_3D(){}
+
+Data_3D::~Data_3D(){
+    if(init){
+        for (int i = 0; i<m_ny; i++) {
+            for(int j = 0; j < m_nz; j++){
+                free(m_dat[i][j]);
+            }
+            free(m_dat[i]);
+        }
+    }
+    free(m_dat);
+}
+
+
+Rho_Data_3D::Rho_Data_3D(){}
+
+Rho_Data_3D::~Rho_Data_3D(){
+    if(at_init){
+        free(at_types);
+        free(at_coords);
+    }
+}
+
+Rho_Data_3D Read_Charge_Density(const char* file){
+    Rho_Data_3D dat;
+    std::ifstream infile(file, std::ios_base::in);
+    if (!infile.is_open()){
+        std::cout << "File did not open!!" << std::endl;
+        exit(9);
+    }
+    
+    
+    std::string line;
+    int num_el = 0;
+    float tmp[20];
+    // first two lines ar comments third line is num ats
+    bool start = false;
+    while(!start){
+        std::getline(infile, line);
+        String_List str_lst(line);
+        start = match_number(str_lst[0]);
+    }
+    Get_Vals(line, tmp, &num_el);
+    int num_ats = tmp[0];
+    dat.num_ats = num_ats;
+    float b_to_A = 1.0; //0.529177;
+    //next three lines are ni ei for i = 1,2,3
+    std::getline(infile, line);
+    Get_Vals(line, tmp, &num_el);
+    dat.m_nx = round(tmp[0]);
+    dat.m_bin_widths[0] = tmp[1]*b_to_A;
+    std::getline(infile, line);
+    Get_Vals(line, tmp, &num_el);
+    dat.m_ny = round(tmp[0]);
+    dat.m_bin_widths[1] = tmp[2]*b_to_A;
+    std::getline(infile, line);
+    Get_Vals(line, tmp, &num_el);
+    dat.m_nz = round(tmp[0]);
+    dat.m_bin_widths[2] = tmp[3]*b_to_A;
+    
+    dat.at_coords = (AMD::Vec3*)malloc(num_ats*sizeof(AMD::Vec3));
+    dat.at_types = (float*)malloc(num_ats*sizeof(float));
+    dat.at_init = true;
+    for(int i = 0; i<num_ats;i++){
+        std::getline(infile, line);
+        Get_Vals(line, tmp, &num_el);
+        dat.at_types[i] = tmp[1];
+        dat.at_coords[i] = AMD::Vec3(tmp[2],tmp[3],tmp[4]);
+        
+    }
+    
+    
+    float* oneD = (float*)malloc(dat.m_nx*dat.m_ny*dat.m_nz*sizeof(float));
+    int count = 0;
+    while (std::getline(infile, line)) {
+            Get_Vals(line, tmp, &num_el);
+            for(int i = 0; i < num_el; i++){
+                oneD[count] = tmp[i];
+                count++;
+            }
+            
+            
+        }
+    
+    count = 0;
+    dat.m_dat = (float***)malloc(dat.m_nx*sizeof(float**));
+    for(int i = 0; i < dat.m_nx; i++){
+        dat.m_dat[i] = (float**)malloc(dat.m_ny*sizeof(float*));
+        for(int j = 0; j< dat.m_ny; j++){
+            dat.m_dat[i][j] = (float*)malloc(dat.m_nz*sizeof(float));
+            for(int k = 0; k < dat.m_nz; k++){
+                dat.m_dat[i][j][k] = oneD[count];
+                count++;
+                
+            }
+        }
+    }
+    dat.init = true;
+    free(oneD);
+    return dat;
+}

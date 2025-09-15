@@ -73,16 +73,19 @@ void Iso_Test(float bw);
 void Draw_Wire();
 void Draw_Rho();
 void Draw_Atoms();
-void Draw_Blank();
+void Draw();
 
-const char* atom_file = "./Other/10001.dump";
+const char* atom_file = "Other/Iro2.dump";
 
 const char* rho_file = "/Users/diggs/Desktop/VolumeData/out-Q0-rho-10-01-24/Q0-rho.dat";
 
 int main(int argc, const char * argv[]) {
     const char* FT = "lammps";
     Sim->Init(atom_file, FT);
-    Draw_Blank();
+    Atoms_Mesh ats;
+    ats.Set_Data();
+    rend.Push_Mesh(ats);
+    Draw();
     return 0;
 }
 
@@ -134,12 +137,13 @@ void Draw_Atoms(){
 
 
 
-void Draw_Blank(){
+void Draw(){
 
     while (!rend.is_open()) {
         //UI stuff
-        
+        rend.Set_Uniforms(l_src);
         rend.Draw_Pass();
+        rend.Draw();
         rend.poll();
     }
     

@@ -10,6 +10,8 @@
 
 #include <stdio.h>
 #include <iostream>
+#include "Meshes.hpp"
+#include "Operations.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -20,27 +22,9 @@
 
 
 
-
-
-
-class VertexArray;
-class Shader;
+class Mesh;
 class Light_Src;
-class IndexBuffer;
-class UI_Window;
-class Atom;
-class Bond;
-class Atoms_Mesh;
-class Bonds;
-class Grid_Mesh;
-class Quad_Mesh;
-class Box_Bounds;
-class Test_Object;
-class RenderTexture;
-class ShadowMap;
-class Hist_2D_Grid_Mesh;
-class Hist_2D;
-class PinHole;
+
 
 //Render:
 //there should only be one.
@@ -54,7 +38,8 @@ private:
     void check(GLFWwindow* window);
     AMD::Vec4 m_cc;
     std::string m_save_file;
-    
+    Mesh* meshes[10];
+    int num_meshes =0;
     
 public:
     Renderer(int w, int l, const char* name);
@@ -64,6 +49,10 @@ public:
     //void set_color(AMD::Vec4 clr);
     
     void Draw_Pass();
+    void Set_Uniforms();
+    void Set_Uniforms(Light_Src& l_src);
+    void Draw();
+    void Push_Mesh(Mesh& mesh);
     int is_open();
     void poll();
     int Write_Curr_Buffer(std::string file_name);

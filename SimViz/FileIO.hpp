@@ -43,7 +43,7 @@ struct Dump
 {
     int timestep;
     int dump_num_atoms;
-    AMD::Vec3 m_lattice[3];
+    AMD::Mat3 m_lattice;
     Atom_Line* Atom_Lines;
     bool init;
     AMD::Vec3 scale;

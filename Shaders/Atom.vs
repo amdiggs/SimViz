@@ -21,10 +21,6 @@ void main()
     f_norm = u_Normal * v_pos;
     f_color = v_color;
     f_pos =  u_MVP * vec4(new_pos,1.0);
-    
-    
-
-    
 }
 #END
 
@@ -65,16 +61,14 @@ void main()
     float ff = Compute_Fog(f_pos);
     color = (1.0 - ff)*l_dot*f_color + ff*Fog_Color;
     color.a = 1.0;
-    
-    
-    
 }
 
 #END
 
 
-
+/*
 temp_clr.a = 1.0;
 float ff = Compute_Fog(f_pos);
 temp_clr = mix(Fog_Color, temp_clr, ff);
 color = temp_clr;
+*/

@@ -365,11 +365,7 @@ void Simulation::Set_Block(int block){
     m_timestep = data->dumps[block].timestep;
     m_num_atoms = data->dumps[block].dump_num_atoms;
     
-    for (int i = 0; i< 3; i++){
-        m_lattice[i] = data->dumps[block].m_lattice[i];
-    }
-    
-    
+    m_lattice = data->dumps[block].m_lattice;
     
     for (int i = 0; i< m_num_atoms; i++){
         atoms[i].Set_Vals(data->dumps[block].Atom_Lines[i]);

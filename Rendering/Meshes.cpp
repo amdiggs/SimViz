@@ -81,14 +81,13 @@ void Atoms_Mesh::Set_Data(){
         int typ = ats[i].Get_Type();
         atom_info a_info = Get_Atom_Info(typ);
         m_offsets[i] = ats[i].Get_Coords();
+        ats[i].Get_Coords().print();
         m_offsets[i]+=center;
         m_radii[i] = a_info.rad;
         m_clrs[i] = a_info.clr;
     }
     
 }
-
-
 
 
 void Atoms_Mesh::Set_Shader(){this->m_sh.bind();}
