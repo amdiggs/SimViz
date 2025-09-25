@@ -277,20 +277,27 @@ public:
 
 
 
-class Cylinder: public SHAPE{
+class Cylinder{
 private:
-    float m_dz;
-    float m_rad;
     float m_len;
-    void Gen_points() override;
-    void Gen_indices() override;
+    float m_rad;
+    float m_dz;
+    int m_num_idx;
+    int m_num_verts;
+    const int m_num_theta = 20;
+    const float m_dth = twoPI/m_num_theta;
     
+    void Gen_points();
+    void Gen_indices();
     
 public:
-    Cylinder(float e_len);
+    AMD::Vertex_TX verts[MAX_VERTS];
+    unsigned int indices[MAX_IDX];
     Cylinder();
+    Cylinder(float len);
     ~Cylinder();
-    
+    int num_idx() const ;
+    int num_verts() const;
 };
 
 
@@ -310,25 +317,36 @@ public:
 };
 
 
-class Cone: public SHAPE{
+class Cone{
 private:
-    void Gen_points() override;
-    void Gen_indices() override;
+    float m_zhi,m_zlo, m_rhi, m_rlo;
+    float m_len;
+    float m_rad;
+    float m_dz;
+    int m_num_idx;
+    int m_num_verts;
+    int m_num_z = 10;
+    const int m_num_theta = 20;
+    const float m_dth = twoPI/m_num_theta;
     
-    
+    void Gen_points();
+    void Gen_indices();
 public:
     Cone();
+    Cone(float zlo, float zhi, float rlo, float rhi);
     ~Cone();
-    
-    
-    
+    AMD::Vertex_TX verts[MAX_VERTS];
+    unsigned int indices[MAX_IDX];
+    int num_idx() const ;
+    int num_verts() const;
 };
 
 
 
-class Arrow: public SHAPE {
-    
+class Arrow {
 private:
+    int m_num_idx;
+    int m_num_verts;
     float m_length;
     int m_num_z;
     float text_id;
@@ -336,18 +354,22 @@ private:
     AMD::Mat4 r_mat;
     AMD::Mat4 label_rot_mat;
     AMD::Vec3 delta;
-    void Gen_points() override;
-    void Gen_indices() override;
+    void Gen_points();
+    void Gen_indices();
     void Gen_Quad();
     void Coordinate_Transform();
     void Rotation();
     
-    
 public:
+    Arrow();
     Arrow(char color);
     Arrow(char color, char dir);
     Arrow(char color, char dir, float len);
     ~Arrow();
+    AMD::Vertex_TX verts[MAX_VERTS];
+    unsigned int indices[MAX_IDX];
+    int num_idx() const ;
+    int num_verts() const;
     
 };
 

@@ -11,15 +11,15 @@
 CXX = clang++
 CXXFLAGS = -glldb -Wall -std=c++17
 
-TARGET = sim_viz
-SOURCE_DIR = .
+TARGET = SimViz
+SOURCE_DIR = ../
 SOURCES = $(shell find $(SOURCE_DIR) -name '*.cpp')
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 LINUX_GL_LIBS = -lGL
 
 #local Libs
-INC_PATHS = ./Math ./Resources ./Rendering ./SimViz ./SimViz/MyOpenCL
+INC_PATHS = $(SOURCE_DIR)/Math $(SOURCE_DIR)/Resources $(SOURCE_DIR)/Rendering $(SOURCE_DIR)/SimViz $(SOURCE_DIR)/SimViz/MyOpenCL
 INC_PATHS += /opt/homebrew/Cellar/freetype/2.13.3/include/freetype2
 LIB_PATHS = 
 #LDFLAGS = $(addprefix -L,$(LIB_PATHS))
@@ -54,16 +54,16 @@ CXXFLAGS += $(IFLAGS)
 CFLAGS = $(CXXFLAGS)
 
 
-%.o:./Math/%.cpp
+%.o:$(SOURCE_DIR)/Math/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-%.o:./Rendering/%.cpp
+%.o:$(SOURCE_DIR)/Rendering/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-%.o:./Resources/%.cpp
+%.o:$(SOURCE_DIR)/Resources/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-%.o:./SimViz/%.cpp
+%.o:$(SOURCE_DIR)/SimViz/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 all: $(TARGET)

@@ -1,95 +1,75 @@
 #SHADER VERTEX
 #version 330 core
 layout (location = 0) in vec3 v_pos;
+layout (location = 1) in vec4 v_color;
+layout (location = 2) in vec3 v_offset;
+layout (location = 3) in vec3 v_rot;
+layout (location = 4) in float v_scale;
 
-out DATA
-{
-    vec3 g_pos;
-    
-}data_out;
 
+out vec3 f_norm;
+out vec4 f_color;
+out vec4 f_pos;
 uniform mat4 u_MVP;
-
-
-
-void main()
-{
-
-    gl_Position = u_MVP * vec4(v_pos,1.0);
-    data_out.g_pos = v_pos;
-}
-#END
-
-#SHADER GEOMETRY
-#version 330 core
-layout (lines) in;
-layout (triangle_strip, max_vertices = 4) out;
-
-in DATA
-{
-
-    vec3 g_pos;
-}data_in[];
-
-
-
-vec4 OFFSET(){
-    vec3 dir = data_in[1].g_pos - data_in[0].g_pos;
-    float x = abs(dir.x);
-    float y = abs(dir.y);
-    float z = abs(dir.z);
-    
-    if(x > 0.1){
-        return vec4(0.0,0.15,0.0,0.0);
-    }
-    else{
-        return vec4(0.15,0.0,0.0,0.0);
-    }
-}
-
-vec4 OFFSET2(){
-    vec3 dir = data_in[1].g_pos - data_in[0].g_pos;
-    float x = abs(dir.x);
-    float y = abs(dir.y);
-    float z = abs(dir.z);
-    
-    if(x > 0.1){
-        return vec4(0.15,0.0,0.0,0.0);
-    }
-    else{
-        return vec4(0.0,0.0,0.0,0.0);
-    }
-}
+uniform mat3 u_Normal;
 
 
 void main()
 {
-    vec4 offset = OFFSET();
-    vec4 offset2 = OFFSET2();
-    gl_Position = gl_in[0].gl_Position;
-    EmitVertex();
-    gl_Position = gl_in[0].gl_Position + offset;
-    EmitVertex();
-    
-    gl_Position = gl_in[1].gl_Position + offset2;
-    EmitVertex();
-    gl_Position = gl_in[1].gl_Position + offset + offset2;
-    EmitVertex();
-    EndPrimitive();
+
+    vec3 new_pos = v_offset + v_scale*v_pos;
+    gl_Position =  u_MVP * vec4(new_pos,1.0);
+    f_norm = u_Normal * v_pos;
+    f_color = v_color;
+    f_pos =  u_MVP * vec4(new_pos,1.0);
 }
 #END
 
-
+/////////////////////////////////////////////////////////////////////////////////////
 
 #SHADER FRAGMENT
 #version 330 core
 layout (location = 0) out vec4 color;
 
 
+in vec3 f_norm;
+in vec4 f_color;
+in vec4 f_pos;
+//Light Uniforms Struct
+struct Light_Source{
+    vec4 clr;
+    vec3 dir;
+    float sat;
+    
+};
+
+uniform Light_Source l_src;
+
+float Compute_Fog(vec4 pos){
+    //float dist = abs(-65.0 - (pos.z/pos.w));
+    // pos min = 40.0 pos max = 75.0 ?
+    float dz = (pos.z - 40.0) / 35.0;
+    float dx = abs(pos.x - 3.0)/55.0;
+    float dist = dx + dz;
+    return smoothstep(0.0,1.0,dist);
+}
+
+vec4 Fog_Color = vec4(0.8,0.60,0.60,0.5);
 void main()
 {
- 
-    color = vec4(0.0,0.0,0.0,1.0);
+    float l_dot = 0.5*(dot(-l_src.dir,f_norm) + 1.0);
+    float ma = f_color.a;
+    float ff = Compute_Fog(f_pos);
+    color = (1.0 - ff)*l_dot*f_color + ff*Fog_Color;
+    color.a = 1.0;
 }
 
 #END
+
+
+/*
+temp_clr.a = 1.0;
+float ff = Compute_Fog(f_pos);
+temp_clr = mix(Fog_Color, temp_clr, ff);
+color = temp_clr;
+*/

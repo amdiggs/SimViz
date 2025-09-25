@@ -15,6 +15,7 @@
 #include "FrameBuffer.hpp"
 #include "Operations.hpp"
 #include "Computes.hpp"
+#include "FileIO.hpp"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -26,7 +27,10 @@ static AMD::Vec4 CC(1.0,1.0,1.0,1.0);
 int Ww =0;
 int Wh = 0;
 extern Operator* op;
+extern Simulation* Sim;
 UI_Window* ui = UI_Window::Get();
+Renderer* rend = Renderer::Get();
+
 
 ImGuiIO& init_io(){
     IMGUI_CHECKVERSION();
@@ -35,13 +39,13 @@ ImGuiIO& init_io(){
     return io;
 }
 
-Renderer::Renderer(int w, int l, const char* name)
+Renderer::Renderer()
 {   glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    this -> m_Window = glfwCreateWindow(w, l, name, NULL, NULL);
+    this -> m_Window = glfwCreateWindow(1800, 1000,"SimViz", NULL, NULL);
     check(m_Window);
     set_context();
     ui->Init(m_Window);
@@ -49,6 +53,7 @@ Renderer::Renderer(int w, int l, const char* name)
 }
 
 
+Renderer* Renderer::Get(){return &inst;}
 Renderer::~Renderer(){
     glfwTerminate();
 }
@@ -103,6 +108,23 @@ void Renderer::Push_Mesh(Mesh& m){
     num_meshes++;
 }
 
+void Renderer::Push_Call(int call){
+    calls[num_calls] = call;
+    num_calls++;
+}
+
+
+void Renderer::Pop_Call(int call){
+    int count = 0;
+    for(int i = 0; i<num_calls; i++){
+        int tmp = calls[i];
+        if(tmp != call){
+            calls[count] = tmp;
+            count++;
+        }
+    }
+    num_calls = count;
+}
 void Renderer::Set_Uniforms(){
     for(int i = 0; i<num_meshes; i++){
         meshes[i]->Set_Uniforms();
@@ -111,11 +133,13 @@ void Renderer::Set_Uniforms(){
 
 
 void Renderer::Set_Uniforms(Light_Src& l_src){
-    op->Set();
-    for(int i = 0; i<num_meshes; i++){
-        meshes[i]->Set_Uniforms(l_src);
+    if(op->need_update){
+        op->Set();
+        for(int i = 0; i<num_meshes; i++){
+            meshes[i]->Set_Uniforms(l_src);
+        }
+        op->need_update = false;
     }
-    op->need_update = false;
 }
 
 
@@ -139,19 +163,19 @@ int Renderer::Write_Curr_Buffer(std::string file_name){
     glfwGetFramebufferSize(m_Window, &width, &height);
     const int num_pix = 3 * width * height;
     unsigned char* pixels = new unsigned char[num_pix];
-    
+
     std::fstream outfile;
     outfile.open(file_name, std::ios::out);
-    
+
     glPixelStorei(GL_PACK_ALIGNMENT,1);
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-    
+
     if(stbi_write_png(file_name.c_str(), width, height, 3, pixels, width*3*sizeof(unsigned char))){
         return 1;
     }
     else return -1;
-    
+
 }
 
 
@@ -173,7 +197,7 @@ GLFWwindow* Renderer::Get_Window(){
 //THIS IS MY UI CLASS!!!!!!!!!!!
 
 UI_Window::UI_Window()
-: m_io(init_io())
+    : m_io(init_io())
 {
     (void)m_io;
 }
@@ -185,8 +209,8 @@ void UI_Window::Init(GLFWwindow* window)
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(m_window, true);
     ImGui_ImplOpenGL3_Init(m_version);
-    
-    
+
+
     ImFont* font = m_io.Fonts -> AddFontFromFileTTF("/System/Library/Fonts/Helvetica.ttc", 16.0);
     IM_ASSERT(font != NULL);
     //glfwGetFramebufferSize(m_window, &display_w, &display_h);
@@ -203,10 +227,25 @@ UI_Window::~UI_Window() {
 }
 
 
-UI_Window UI_Window::inst;
 UI_Window* UI_Window::Get(){return &inst;}
 
+void UI_Window::Error_PopUp(const char* msg){
+    ImGui::OpenPopup("Error");
+    // Always center this window when appearing
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Error:\n%s", msg);
+        if (ImGui::Button("Ok", ImVec2(120, 0))) {
+            err = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
 
+//Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Iso, Draw_Rho, Draw_Wire,Draw_Vox_Full};
 
 void UI_Window::Simple_window(){
     static float theta = 0.0;
@@ -218,6 +257,7 @@ void UI_Window::Simple_window(){
     static float C_theta = 0.0;
     static float C_phi = 0.0;
     static int timestep = 0;
+    static bool ft = false;
     static AMD::Vec3 trans;
     static AMD::Vec3 look;
     static AMD::Vec3 Cam_Pos(-5.5,0.0,-65.0);
@@ -225,7 +265,8 @@ void UI_Window::Simple_window(){
     static Light_Src light_src;
     const ImGuiKey m_keys[4] ={ImGuiKey_UpArrow, ImGuiKey_DownArrow, ImGuiKey_RightArrow, ImGuiKey_LeftArrow};
     op->need_update = false;
-    
+    static char buf1[256];
+
     ImGui::SetNextWindowPos(ImVec2(0.0, 0.0));
 
 
@@ -246,72 +287,117 @@ void UI_Window::Simple_window(){
     display_h = ui_size.y;
 
     ImGui::Text("display W = %d, display H = %d", display_w,display_h);
-   
-    
-    
-    if(ImGui::InputFloat("View X", &Cam_Pos.x, 0.05f, 1.0f, "%.2f")){op->need_update = true;}
-    if(ImGui::InputFloat("View Y", &Cam_Pos.y, 0.05f, 1.0f, "%.2f")){op->need_update = true;}
-    if(ImGui::InputFloat("View Z", &Cam_Pos.z, 0.05f, 1.0f, "%.2f")){op->need_update = true;}
-    
-    if(ImGui::InputFloat("Near", &Proj.b, 1.0f, 1.0f, "%.2f")){
-        op->Get_Proj_vec() = Proj;
-        op->need_update = true;
-        
-    }
-    if(ImGui::InputFloat("Far", &Proj.a, 1.0f, 100.0f, "%.2f")){
-        op->Get_Proj_vec() = Proj;
-        op->need_update = true;
-        
-    }
-    
-    
-    for ( int i = 0; i < 4; i++){
-    if (ImGui::IsKeyDown(m_keys[i]) && !m_io.KeyShift && !m_io.KeyAlt){
-        
-        switch (i) {
-            case 0:
-                //Cam_Pos.y += 0.1;
-                op->need_update = true;
-                C_theta -= 0.1;
-                break;
-                
-            case 1:
-                //Cam_Pos.y -= 0.1;
-                op->need_update = true;
-                C_theta += 0.1;
-                break;
-            case 2:
-                //op.m_Cam.Move_LeftRight(-0.01);
-                C_phi +=0.1;
-                op->need_update = true;
-                break;
-                
-            case 3:
-                //op.m_Cam.Move_LeftRight(0.01);
-                C_phi -=0.1;
-                op->need_update = true;
-                break;
-                
-                
-                
-            default:
-                break;
+    //enum File_Type {lammps, qe, jdftx, ase};
+    const char* fts[4] = {"LAMMPS/dump", "Quantum Espresso", "JDFTX", "ASE/XYZ"};
+    static char atom_file[128] = "";
+    ImGui::Text("File: %s", atom_file);
+    ImGui::SameLine();
+
+    if (ImGui::Button("Open"))
+        ImGui::OpenPopup("open");
+    static int selected = -1;
+
+    // Always center this window when appearing
+    //enum File_Type {lammps, qe, jdftx, ase};
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal("open", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::InputText("Input File", atom_file, IM_ARRAYSIZE(atom_file));
+        if (ImGui::TreeNode("File Type:"))
+        {
+            for (int n = 0; n < 4; n++)
+            {
+                if (ImGui::Selectable(fts[n], selected == n,ImGuiSelectableFlags_DontClosePopups)){
+                    selected = n;
+                    ft = true;
+                }
+            }
+            ImGui::TreePop();
         }
-        
+        if (ImGui::Button("Open", ImVec2(120, 0))) { 
+            if(!Check_File(atom_file)){
+            sprintf(buf1,"File %s was not found\n",atom_file);
+                err=true;}
+            else if(!ft){
+            sprintf(buf1,"File type must be selected");
+                err=true;}
+            else{
+                Sim->Init(atom_file, selected);
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+        ImGui::EndPopup();
     }
+
+
+    if (ImGui::CollapsingHeader("Object View", ImGuiTreeNodeFlags_None)){
+        if(ImGui::InputFloat("View X", &Cam_Pos.x, 0.05f, 1.0f, "%.2f")){op->need_update = true;}
+        if(ImGui::InputFloat("View Y", &Cam_Pos.y, 0.05f, 1.0f, "%.2f")){op->need_update = true;}
+        if(ImGui::InputFloat("View Z", &Cam_Pos.z, 0.05f, 1.0f, "%.2f")){op->need_update = true;}
+
+        if(ImGui::InputFloat("Near", &Proj.b, 1.0f, 1.0f, "%.2f")){
+            op->Get_Proj_vec() = Proj;
+            op->need_update = true;
+
+        }
+        if(ImGui::InputFloat("Far", &Proj.a, 1.0f, 100.0f, "%.2f")){
+            op->Get_Proj_vec() = Proj;
+            op->need_update = true;
+
+        }
     }
-    
+
+    for ( int i = 0; i < 4; i++){
+        if (ImGui::IsKeyDown(m_keys[i]) && !m_io.KeyShift && !m_io.KeyAlt){
+
+            switch (i) {
+                case 0:
+                    //Cam_Pos.y += 0.1;
+                    op->need_update = true;
+                    C_theta -= 0.1;
+                    break;
+
+                case 1:
+                    //Cam_Pos.y -= 0.1;
+                    op->need_update = true;
+                    C_theta += 0.1;
+                    break;
+                case 2:
+                    //op.m_Cam.Move_LeftRight(-0.01);
+                    C_phi +=0.1;
+                    op->need_update = true;
+                    break;
+
+                case 3:
+                    //op.m_Cam.Move_LeftRight(0.01);
+                    C_phi -=0.1;
+                    op->need_update = true;
+                    break;
+
+
+
+                default:
+                    break;
+            }
+
+        }
+    }
+
     if (m_io.KeyShift){
-        
+
         if (ImGui::IsKeyDown(ImGuiKey_UpArrow)){
             Cam_Pos.z += 0.5;
             op->need_update = true;
-            
+
         }
         else if (ImGui::IsKeyDown(ImGuiKey_DownArrow)){
             Cam_Pos.z -= 0.5;
             op->need_update = true;
-            
+
         }
         else if (ImGui::IsKeyDown(ImGuiKey_LeftArrow)){
             Cam_Pos.x -= 0.5;
@@ -322,8 +408,8 @@ void UI_Window::Simple_window(){
             op->need_update = true;
         }
     }
-    
-    
+
+
     if(!m_io.WantCaptureMouse){
         if(ImGui::IsMouseDragging(0)){
             if(abs(m_io.MouseDelta.x) > abs(m_io.MouseDelta.y)){
@@ -331,7 +417,7 @@ void UI_Window::Simple_window(){
             }
             else{M_theta  += 0.005*m_io.MouseDelta.y;}
             op->need_update = true;
-            
+
         }
     }
     float wheel_test = m_io.MouseWheel;
@@ -339,87 +425,90 @@ void UI_Window::Simple_window(){
         Cam_Pos.z += 0.25*wheel_test;
         op->need_update = true;
     }
-    ImGui::Text("Light Color:"); ImGui::SameLine(); ImGui::Text("Clear Color:");
-    float w = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.y) * 0.40f;
-    ImGui::SetNextItemWidth(w);
-    if(ImGui::ColorPicker4("##MyColor##2", light_src.Get_Color_ptr(), ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha)){
-        op->need_update = true;
-    }
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(w);
-    ImGui::ColorPicker3("##MyColor##3", CC.get(), ImGuiColorEditFlags_NoInputs);
+    if (ImGui::CollapsingHeader("Colors/Light Source", ImGuiTreeNodeFlags_None)){
+        ImGui::Text("Light Color:"); ImGui::SameLine(); ImGui::Text("Clear Color:");
+        float w = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.y) * 0.40f;
+        ImGui::SetNextItemWidth(w);
+        if(ImGui::ColorPicker4("##MyColor##2", light_src.Get_Color_ptr(), ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha)){
+            op->need_update = true;
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(w);
+        ImGui::ColorPicker3("##MyColor##3", CC.get(), ImGuiColorEditFlags_NoInputs);
 
+        ImGui::InputFloat("Color Saturation", light_src.Get_Dir_ptr(), 0.01f, 1.0f, "%.2f");
+        static int div1 = 0;
+        static int div2 = 0;
+        ImGui::VSliderInt("theta", ImVec2(30, 100), &div1, 0, 24);
+        ImGui::SameLine(100.0f);
+        ImGui::VSliderInt("phi", ImVec2(30, 100), &div2, 0, 24);
+        theta = PI*(div1/10.0);
+        phi = PI*(div2/10.0);
 
-    static int div1 = 0;
-    static int div2 = 0;
-    ImGui::VSliderInt("theta", ImVec2(30, 100), &div1, 0, 24);
-    ImGui::SameLine(100.0f);
-    ImGui::VSliderInt("phi", ImVec2(30, 100), &div2, 0, 24);
-    theta = PI*(div1/10.0);
-    phi = PI*(div2/10.0);
-    
-    light_src.Set_Pos(theta, phi);
-    AMD::Vec3 light = light_src.Get_Pos();
-    ImGui::Text("Camera");
-    ImGui::SameLine();
-    ImGui::Text("theta = %f, phi = %f", C_theta, C_phi);
-    ImGui::Text("theta = %f, phi = %f", theta, phi);
-    ImGui::Text("Light Source Position");
-    ImGui::SameLine();
-    ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light.x, light.y,light.z);
-    ImGui::Text("Target");
-    ImGui::SameLine();
-    ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light_src.Get_Target().x,light_src.Get_Target().z,light_src.Get_Target().z);
-    ImGui::Text("Direction");
-    ImGui::SameLine();
-    ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light_src.Get_Direction_vec().x,light_src.Get_Direction_vec().y,light_src.Get_Direction_vec().z);
-    
-    static float sx = 0.0;
-    static float sy = 0.0;
-    static float sz = 0.0;
-    if(ImGui::VSliderFloat("Shift X", ImVec2(30, 100), &sx, 0.0, 1.0)){
-        Simulation::Get()->shift.x = sx;
-        Simulation::Get()->Step_Zero();
-        timestep = Simulation::Get()->Timestep();
-        
-    }
-    ImGui::SameLine(120.0f);
-    if(ImGui::VSliderFloat("Shift Y", ImVec2(30, 100), &sy, 0.0, 1.0)){
-        Simulation::Get()->shift.y = sy;
-        Simulation::Get()->Step_Zero();
-        timestep = Simulation::Get()->Timestep();
-        
-    }
-    ImGui::SameLine(240.0f);
-    if(ImGui::VSliderFloat("Shift z", ImVec2(30, 100), &sz, 0.0, 1.0)){
-        Simulation::Get()->shift.z = sz;
-        Simulation::Get()->Step_Zero();
-        timestep = Simulation::Get()->Timestep();
-        
+        light_src.Set_Pos(theta, phi);
+        AMD::Vec3 light = light_src.Get_Pos();
+        ImGui::Text("Camera");
+        ImGui::SameLine();
+        ImGui::Text("theta = %f, phi = %f", C_theta, C_phi);
+        ImGui::Text("theta = %f, phi = %f", theta, phi);
+        ImGui::Text("Light Source Position");
+        ImGui::SameLine();
+        ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light.x, light.y,light.z);
+        ImGui::Text("Target");
+        ImGui::SameLine();
+        ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light_src.Get_Target().x,light_src.Get_Target().z,light_src.Get_Target().z);
+        ImGui::Text("Direction");
+        ImGui::SameLine();
+        ImGui::Text("x = %.2f, y = %.2f, z = %.2f", light_src.Get_Direction_vec().x,light_src.Get_Direction_vec().y,light_src.Get_Direction_vec().z);
     }
     //op.m_Cam.Look_At(AMD::Vec3(0.0,0.0,10.0));
-    ImGui::InputFloat("Color Saturation", light_src.Get_Dir_ptr(), 0.01f, 1.0f, "%.2f");
-    
-    
-        if (ImGui::Button("SAVE"))
-             ImGui::OpenPopup("Save");
 
-        // Always center this window when appearing
-        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-        if (ImGui::BeginPopupModal("Save", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-        {
-            static char file_name[128] = "Hello";
-            ImGui::InputText("input text", file_name, IM_ARRAYSIZE(file_name));
-            if (ImGui::Button("Save", ImVec2(120, 0))) { 
-                ImGui::CloseCurrentPopup();
-                Write_Buffer(file_name);
-            }
-            ImGui::SetItemDefaultFocus();
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
-            ImGui::EndPopup();
+    static bool atoms = false;
+    static bool iso = false;
+    static bool rho = false;
+    static bool wire = false;
+    static bool vox = false;
+    if (ImGui::CollapsingHeader("Draw Call/ Computes", ImGuiTreeNodeFlags_None)){
+    if(ImGui::Checkbox("Draw Atoms", &atoms)){
+        if(atoms){rend->Push_Call(0);}
+        else{rend->Pop_Call(0);}
+    }
+    if(ImGui::Checkbox("Draw Iso-Surface", &iso)){
+        if(iso){rend->Push_Call(1);}
+        else{rend->Pop_Call(1);}
+    }
+    if(ImGui::Checkbox("Draw Density", &rho)){
+        if(rho){rend->Push_Call(2);}
+        else{rend->Pop_Call(2);}
+    }
+    if(ImGui::Checkbox("Draw Wire Frame", &wire)){
+        if(wire){rend->Push_Call(3);}
+        else{rend->Pop_Call(3);}
+    }
+    if(ImGui::Checkbox("Draw Voxel", &vox)){
+        if(vox){rend->Push_Call(4);}
+        else{rend->Pop_Call(4);}
+    }
+    }
+
+    if (ImGui::Button("SAVE"))
+        ImGui::OpenPopup("Save");
+
+    // Always center this window when appearing
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal("Save", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        static char file_name[128] = "none";
+        ImGui::InputText("input text", file_name, IM_ARRAYSIZE(file_name));
+        if (ImGui::Button("Save", ImVec2(120, 0))) { 
+            ImGui::CloseCurrentPopup();
+            Write_Buffer(file_name);
         }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+        ImGui::EndPopup();
+    }
     //ImGui::Text("%s", save_file.c_str());
     ImGui::Text("%s","Play");
     if(!play){
@@ -438,11 +527,11 @@ void UI_Window::Simple_window(){
         }
         counter++;
     }
-    
+
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Timestep");
     ImGui::SameLine();
-    
+
     ImGui::PushID(0);
     ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(3.0 / 7.0f, 0.6f, 0.6f));
     float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
@@ -452,9 +541,9 @@ void UI_Window::Simple_window(){
     }
     ImGui::PopStyleColor(1);
     ImGui::PopID();
-    
+
     ImGui::SameLine(0.0f, spacing);
-    
+
     ImGui::PushID(1);
     ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(3.0 / 7.0f, 0.6f, 0.6f));
     if (ImGui::ArrowButton("##right", ImGuiDir_Right)) {
@@ -465,11 +554,34 @@ void UI_Window::Simple_window(){
     ImGui::PopID();
     ImGui::SameLine();
     ImGui::Text(" %d",timestep);
-    
-    
+
+    static float sx = 0.0;
+    static float sy = 0.0;
+    static float sz = 0.0;
+    if(ImGui::VSliderFloat("Shift X", ImVec2(30, 100), &sx, 0.0, 1.0)){
+        Simulation::Get()->shift.x = sx;
+        Simulation::Get()->Step_Zero();
+        timestep = Simulation::Get()->Timestep();
+
+    }
+    ImGui::SameLine(120.0f);
+    if(ImGui::VSliderFloat("Shift Y", ImVec2(30, 100), &sy, 0.0, 1.0)){
+        Simulation::Get()->shift.y = sy;
+        Simulation::Get()->Step_Zero();
+        timestep = Simulation::Get()->Timestep();
+
+    }
+    ImGui::SameLine(240.0f);
+    if(ImGui::VSliderFloat("Shift z", ImVec2(30, 100), &sz, 0.0, 1.0)){
+        Simulation::Get()->shift.z = sz;
+        Simulation::Get()->Step_Zero();
+        timestep = Simulation::Get()->Timestep();
+
+    }
+    if(err){Error_PopUp(buf1);}
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
-    
+
     if(op->need_update){
         op->Set_W_Scale(Ww, Wh);
         op->m_Cam.Move_To(Cam_Pos);
@@ -490,16 +602,16 @@ void UI_Window::Push_Item(const char* name, float* item){
 
 
 
- void UI_Window::NewFrame() const{
-     ImGui_ImplOpenGL3_NewFrame();
-     ImGui_ImplGlfw_NewFrame();
-     ImGui::NewFrame();
- }
+void UI_Window::NewFrame() const{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
 
- void UI_Window::render() const{
-     ImGui::Render();
-     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
- }
+void UI_Window::render() const{
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
 
 
@@ -510,21 +622,23 @@ void UI_Window::Write_Buffer(const char* file_name){
     width-=600;
     const int num_pix = 3 * width * height;
     unsigned char* pixels = new unsigned char[num_pix];
-    
+
     std::fstream outfile;
     outfile.open(file_name, std::ios::out);
-    
+
     glPixelStorei(GL_PACK_ALIGNMENT,1);
     glReadBuffer(GL_FRONT);
     glReadPixels(600, 0, width , height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-    
+
     if(stbi_write_png(file_name, width, height, 3, pixels, width*3*sizeof(unsigned char))){
         return;
     }
     else return;
-    
+
 }
 
+UI_Window UI_Window::inst;
+Renderer Renderer::inst;
 
 
 

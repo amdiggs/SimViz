@@ -6,9 +6,11 @@
 //
 
 #include "Atomic.hpp"
+#include "AMDmath.hpp"
 #include "FileIO.hpp"
 #include "AtomInfo.h"
 #include "Meshes.hpp"
+#include <cstddef>
 Simulation* Sim = Simulation::Get();
 extern Dump_Arr* data;
 
@@ -284,7 +286,62 @@ void Bond::Set_Len() {
 
 //
 //
-//
+Molecule::Molecule(){};
+Molecule::~Molecule(){};
+
+void Molecule::Push_Atom(Atom* at){
+    m_ats[m_num_ats] = at;
+    m_num_ats++;
+}
+
+Atom** Molecule::Get_Atoms(){return &(m_ats[0]);}
+
+Dipole Molecule::Comp_Dipole(){
+    AMD::Vec3 v1 = m_ats[0]->Get_Coords() - m_ats[1]->Get_Coords();
+    AMD::Vec3 v2 = m_ats[0]->Get_Coords() - m_ats[2]->Get_Coords();
+    AMD::Vec3 dir = v1 + v2;
+    m_dp.dir = AMD::Normalize(dir);
+    m_dp.len = dir.len();
+    m_dp.origin = m_ats[0]->Get_Coords();
+    return m_dp;
+}
+
+bool H2O_Check(Atom& at, Atom** others){
+    int num_H = 0;
+    Atom** nebs = at.Get_Neighbors();
+    for(int i = 0; i<at.Get_Num_Neighbors(); i++){
+        Atom* neb = nebs[i];
+        atom_info ai = Get_Atom_Info(neb->Get_Type());
+        if(strcmp(ai.ID, "H") == 0){
+            others[num_H] = neb;
+            num_H ++;
+        }
+    }
+    return (num_H >= 2);
+}
+
+Array_of_H2O::Array_of_H2O(){molecs = (Molecule*)malloc(sizeof(Molecule));}
+Array_of_H2O::~Array_of_H2O(){free(molecs);}
+
+
+
+void Array_of_H2O::Comp_H2O(){
+    int num_ats = Sim->Num_Atoms();
+    int count = 0;
+    Atom* ats = Sim->Atoms();
+    Atom** nebs = (Atom**)malloc(5*sizeof(Atom*));
+    for(int i = 0; i<num_ats; i++){
+        if(H2O_Check(ats[i], nebs)){
+            molecs = (Molecule*)realloc(molecs,(count + 1)*sizeof(Molecule));
+            molecs[count].Push_Atom(&(ats[i]));
+            molecs[count].Push_Atom(nebs[0]);
+            molecs[count].Push_Atom(nebs[1]);
+            count ++;
+        }
+    }
+    num_h2o = count;
+    free(nebs);
+}
 //   This is the simulation class it contains all info about the simulation.
 
 Simulation::Simulation()
@@ -305,7 +362,7 @@ Simulation* Simulation::Get(){ return &inst;}
 
 
 
-void Simulation::Init(const char* file, const char* ft){
+void Simulation::Init(const char* file, int ft){
     data->Init(file, ft);
     m_num_atoms = data->dumps[0].dump_num_atoms;
     atoms = (Atom*)malloc(m_num_atoms*sizeof(Atom));
@@ -317,7 +374,7 @@ void Simulation::Init(const char* file, const char* ft){
     Compute_Neighbors();
     Check_Nebs();
     m_init = true;
-    
+    m_need_update = true;
 }
 void Simulation::Compute_Neighbors() { 
     int count = 0;

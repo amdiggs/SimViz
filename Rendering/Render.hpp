@@ -40,27 +40,30 @@ private:
     std::string m_save_file;
     Mesh* meshes[10];
     int num_meshes =0;
-    
+    Renderer();
+    Renderer(const Renderer&) = delete;
+    Renderer& operator=(const Renderer&) = delete;
+    static Renderer inst;
 public:
-    Renderer(int w, int l, const char* name);
     ~Renderer();
     GLFWwindow* Get_Window();
     void set_context();
-    //void set_color(AMD::Vec4 clr);
+    static Renderer* Get();
     
     void Draw_Pass();
     void Set_Uniforms();
     void Set_Uniforms(Light_Src& l_src);
     void Draw();
     void Push_Mesh(Mesh& mesh);
+    void Push_Call(int num);
+    void Pop_Call(int num);
     int is_open();
     void poll();
     int Write_Curr_Buffer(std::string file_name);
     int m_w, m_h;
     int ts = 0;
-    
-    
-    
+    int num_calls = 0;
+    int calls[5] = {0};
 };
 
 ImGuiIO& init_io();
@@ -78,6 +81,7 @@ private:
     UI_Window(const UI_Window&) = delete;
     UI_Window operator=(const UI_Window&) = delete;
     static UI_Window inst;
+    bool err = false;
     
 public:
     ~UI_Window();
@@ -87,7 +91,7 @@ public:
     void Simple_window();
     void render() const;
     void NewFrame() const;
-    
+    void Error_PopUp(const char* msg);
     void Push_Item(const char* item_name, float* item);
     void Write_Buffer(const char* file_name);
 };

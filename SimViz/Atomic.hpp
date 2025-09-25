@@ -102,6 +102,37 @@ public:
     
 };
 
+struct Dipole{
+    AMD::Vec3 origin;
+    AMD::Vec3 dir;
+    float len;
+};
+
+class Molecule {
+private:
+    Atom* m_ats[5];
+    int m_num_ats=0;
+    Dipole m_dp;
+
+public:
+    Molecule();
+    ~Molecule();
+    void Push_Atom(Atom* at);
+    Atom** Get_Atoms();
+    Dipole Comp_Dipole();
+
+};
+
+
+
+struct Array_of_H2O{
+    Molecule* molecs = NULL;
+    int num_h2o = 0;
+    Array_of_H2O();
+    ~Array_of_H2O();
+    void Comp_H2O();
+};
+
 class Simulation{
 private:
     
@@ -135,7 +166,7 @@ private:
     //needed for rendering
     //int neighbor_IDs[4*MAX_ATOMS][2];
 public:
-    void Init(const char* file, const char* ft);
+    void Init(const char* file,int ft);
     static Simulation* Get();
     ~Simulation();
     AMD::Vec3 shift;

@@ -30,6 +30,10 @@
 #define ATOM_LINE3 "ITEM: ATOMS type x y z"
 
 
+
+bool Check_File(const char* file);
+bool Check_FT(const char* ft);
+
 //needed by Atom constructor
 struct Atom_Line{
     int id;
@@ -74,7 +78,7 @@ public:
     unsigned int num_iter=0;
     bool init = false;
     static Dump_Arr* Get();
-    void Init(const char* dat_file, const char* ft);
+    void Init(const char* dat_file, int ft);
     ~Dump_Arr();
 
 };

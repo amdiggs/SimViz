@@ -15,6 +15,7 @@
 #include <fstream>
 #include <sstream>
 #include "AMDmath.hpp"
+#include "Atomic.hpp"
 #include "vertexbuffer.hpp"
 #include "vertexarray.hpp"
 #include "shader.hpp"
@@ -305,21 +306,23 @@ public:
 class Vector_Mesh : public Mesh{
 private:
     VertexArray m_VAO;
-    //IndexBuffer m_IBO;
+    IndexBuffer m_IBO;
     const std::string shader_file = "./Shaders/vector.vs";
     int m_num;
     Shader m_sh;
     
-    
-    unsigned int m_pos_vbo, m_clr_vbo;
+    unsigned int m_pos_vbo,m_rot_vbo, m_scale_vbo;
     AMD::Vec3* m_pos = NULL;
-    //AMD::Vec4* m_clr = NULL;
+    AMD::Vec3* m_rot = NULL;
+    float* m_scale = NULL;
+    bool init = false;
     
 public:
     
     Vector_Mesh();
     ~Vector_Mesh();
     void Set_Data(AMD::Vec3* dat, int num_vec);
+    void Set_Data(const Array_of_H2O&);
     void Draw() override;
 
     void Set_Shader() override;
@@ -344,6 +347,7 @@ public:
     
     Sim_Box_Mesh();
     ~Sim_Box_Mesh();
+    void Set_Data();
     void Draw() override;
 
     void Set_Shader() override;

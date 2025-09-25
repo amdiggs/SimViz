@@ -6,6 +6,7 @@
 //
 
 #include "Meshes.hpp"
+#include "AMDmath.hpp"
 #include "Shapes.hpp"
 #include "Atomic.hpp"
 #include "Texture.hpp"
@@ -81,12 +82,11 @@ void Atoms_Mesh::Set_Data(){
         int typ = ats[i].Get_Type();
         atom_info a_info = Get_Atom_Info(typ);
         m_offsets[i] = ats[i].Get_Coords();
-        ats[i].Get_Coords().print();
         m_offsets[i]+=center;
         m_radii[i] = a_info.rad;
         m_clrs[i] = a_info.clr;
     }
-    
+    printf("Set Data Atoms Mesh.\n");
 }
 
 
@@ -171,6 +171,160 @@ void Bond_Mesh::Draw() {
     this->m_VAO.bind();
     glDrawArrays(GL_LINES,0,m_num_verts);
     this->m_VAO.unbind();
+}
+
+
+//##############################################################################################
+Vector_Mesh::Vector_Mesh()
+:m_sh(shader_file)
+{
+    Arrow ar;
+    m_VAO.Add_Static_Buffer(ar.verts,sizeof(AMD::Vec3),ar.num_verts());
+    m_IBO.Gen_Buffer(ar.indices,ar.num_idx());
+    m_scale_vbo = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(float));
+    m_pos_vbo = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec3));
+    m_rot_vbo = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec3));
+    m_pos = (AMD::Vec3*)malloc(10000*sizeof(AMD::Vec3));
+    
+}
+
+
+
+Vector_Mesh::~Vector_Mesh()
+{
+    if(init){
+        free(m_pos);
+        free(m_scale);
+        free(m_rot);
+    }
+}
+
+
+
+void Vector_Mesh::Set_Data(AMD::Vec3* dat, int num_vec){
+    m_num = 0;
+    for(int i = 0; i < num_vec; i++){
+        m_pos[m_num] = dat[i];
+        m_num++;
+    }
+    
+}
+
+void Vector_Mesh::Set_Data(const Array_of_H2O& h2o){
+    int num = h2o.num_h2o +10;
+    if(!init){
+        m_pos = (AMD::Vec3*)malloc(num*sizeof(AMD::Vec3));
+        m_rot = (AMD::Vec3*)malloc(num*sizeof(AMD::Vec3));
+        m_scale = (float*)malloc(num*sizeof(float));
+    }
+    float ay, az;
+    m_num = 0;
+    Molecule* mols = h2o.molecs;
+    AMD::Vec3 z_hat(0.0,0.0, 1.0);
+    AMD::Vec3 y_hat(0.0,1.0, 0.0);
+    for(int i = 0; i < h2o.num_h2o ; i++){
+        Dipole dp = mols[i].Comp_Dipole();
+        m_pos[m_num] = dp.origin;
+        ay = AMD::Get_angle(dp.origin, z_hat);
+        az = AMD::Get_angle(dp.origin, y_hat);
+        m_rot[m_num] = AMD::Vec3(0.0,ay,az);
+        m_scale[m_num] = dp.len;
+        m_num++;
+    }
+    
+}
+
+
+void Vector_Mesh::Set_Shader(){
+    this->m_sh.bind();
+}
+
+
+void Vector_Mesh::Set_Uniforms(){
+    this->m_sh.Set_Uniform_MVP();
+    
+}
+
+
+void Vector_Mesh::Set_Uniforms(Light_Src& l_src){
+    this->m_sh.Set_Uniform_MVP();
+    
+}
+
+void Vector_Mesh::Draw(){
+    glBindBuffer(GL_ARRAY_BUFFER,m_pos_vbo);
+    glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec3), (void*)m_pos, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    //glBindBuffer(GL_ARRAY_BUFFER,m_clr_vbo);
+    //glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec4), (void*)m_clr, GL_DYNAMIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER,0);
+    
+    
+    this->m_VAO.bind();
+    glDrawArrays(GL_LINES,0,m_num);
+    this->m_VAO.unbind();
+}
+
+
+
+
+
+//##############################################################################################
+Sim_Box_Mesh::Sim_Box_Mesh()
+:m_sh(shader_file){}
+
+
+void Sim_Box_Mesh::Set_Data()
+{
+    AMD::Vec3 h_box = 0.5*Sim->Sim_Box();
+    float x = h_box.x;
+    float y = h_box.y;
+    float z = h_box.z;
+    m_pos[0] = AMD::Vec3(-x,-y,-z);
+    m_pos[1] = AMD::Vec3(x,-y,-z);
+    m_pos[2] = AMD::Vec3(x,y,-z);
+    m_pos[3] = AMD::Vec3(-x,y,-z);
+    
+    m_pos[4] = AMD::Vec3(-x,-y,z);
+    m_pos[5] = AMD::Vec3(x,-y,z);
+    m_pos[6] = AMD::Vec3(x,y,z);
+    m_pos[7] = AMD::Vec3(-x,y,z);
+    
+    m_VAO.Add_Static_Buffer(m_pos, sizeof(AMD::Vec3), 8);
+    m_IBO.Gen_Buffer(indices, 24);
+}
+
+
+
+Sim_Box_Mesh::~Sim_Box_Mesh(){}
+
+
+
+
+
+void Sim_Box_Mesh::Set_Shader(){
+    this->m_sh.bind();
+}
+
+
+void Sim_Box_Mesh::Set_Uniforms(){
+    this->m_sh.Set_Uniform_MVP();
+    
+}
+
+
+void Sim_Box_Mesh::Set_Uniforms(Light_Src& l_src){
+    this->m_sh.Set_Uniform_MVP();
+    
+}
+
+
+void Sim_Box_Mesh::Draw(){
+    this->m_VAO.bind();
+    this->m_IBO.bind();
+    glDrawElements(GL_LINES,m_IBO.get_num(), GL_UNSIGNED_INT,0);
+    this->m_VAO.unbind();
+    this->m_IBO.unbind();
 }
 
 //##############################################################3
@@ -1449,125 +1603,6 @@ void Sphere_Mesh::Draw(){
 
 
 
-
-
-//##############################################################################################
-Vector_Mesh::Vector_Mesh()
-:m_sh(shader_file)
-{
-    m_pos = (AMD::Vec3*)malloc(10000*sizeof(AMD::Vec3));
-    m_pos_vbo = m_VAO.Add_Dynamic_Buffer(sizeof(AMD::Vec3));
-    
-}
-
-
-
-Vector_Mesh::~Vector_Mesh()
-{
-    free(m_pos);
-}
-
-
-
-void Vector_Mesh::Set_Data(AMD::Vec3* dat, int num_vec){
-    m_num = 0;
-    for(int i = 0; i < num_vec; i++){
-        m_pos[m_num] = dat[i];
-        m_num++;
-    }
-    
-}
-
-
-
-void Vector_Mesh::Set_Shader(){
-    this->m_sh.bind();
-}
-
-
-void Vector_Mesh::Set_Uniforms(){
-    this->m_sh.Set_Uniform_MVP();
-    
-}
-
-
-void Vector_Mesh::Set_Uniforms(Light_Src& l_src){
-    this->m_sh.Set_Uniform_MVP();
-    
-}
-
-void Vector_Mesh::Draw(){
-    glBindBuffer(GL_ARRAY_BUFFER,m_pos_vbo);
-    glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec3), (void*)m_pos, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER,0);
-    //glBindBuffer(GL_ARRAY_BUFFER,m_clr_vbo);
-    //glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec4), (void*)m_clr, GL_DYNAMIC_DRAW);
-    //glBindBuffer(GL_ARRAY_BUFFER,0);
-    
-    
-    this->m_VAO.bind();
-    glDrawArrays(GL_LINES,0,m_num);
-    this->m_VAO.unbind();
-}
-
-
-
-
-
-//##############################################################################################
-Sim_Box_Mesh::Sim_Box_Mesh()
-:m_sh(shader_file)
-{
-    AMD::Vec3 h_box = 0.5*Sim->Sim_Box();
-    float x = h_box.x;
-    float y = h_box.y;
-    float z = h_box.z;
-    m_pos[0] = AMD::Vec3(-x,-y,-z);
-    m_pos[1] = AMD::Vec3(x,-y,-z);
-    m_pos[2] = AMD::Vec3(x,y,-z);
-    m_pos[3] = AMD::Vec3(-x,y,-z);
-    
-    m_pos[4] = AMD::Vec3(-x,-y,z);
-    m_pos[5] = AMD::Vec3(x,-y,z);
-    m_pos[6] = AMD::Vec3(x,y,z);
-    m_pos[7] = AMD::Vec3(-x,y,z);
-    
-    m_VAO.Add_Static_Buffer(m_pos, sizeof(AMD::Vec3), 8);
-    m_IBO.Gen_Buffer(indices, 24);
-}
-
-
-
-Sim_Box_Mesh::~Sim_Box_Mesh(){}
-
-
-
-
-
-void Sim_Box_Mesh::Set_Shader(){
-    this->m_sh.bind();
-}
-
-
-void Sim_Box_Mesh::Set_Uniforms(){
-    this->m_sh.Set_Uniform_MVP();
-    
-}
-
-
-void Sim_Box_Mesh::Set_Uniforms(Light_Src& l_src){
-    this->m_sh.Set_Uniform_MVP();
-    
-}
-
-
-void Sim_Box_Mesh::Draw(){
-    this->m_VAO.bind();
-    this->m_IBO.bind();
-    glDrawElements(GL_LINES,m_IBO.get_num(), GL_UNSIGNED_INT,0);
-    this->m_VAO.unbind();
-    this->m_IBO.unbind();
-}
 
 
 //#####################################################################################################

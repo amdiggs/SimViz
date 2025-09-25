@@ -54,7 +54,7 @@ void free(void* ptr){
 std::default_random_engine gen;
 std::uniform_real_distribution<float> rnd(0, 1);
 
-Renderer rend(1800,1000, "SimViz");
+extern Renderer* rend;
 
 //init Operator and Light Source
 extern Operator* op;
@@ -65,26 +65,46 @@ float*** Build_Arr(int depth, int rows, int cols);
 void Delete_Arr(float*** arr,int depth, int rows);
 void Draw_Vox_Sphere();
 
-void Draw_Vox_Full(float bw);
-void Draw_Vox_Pinhole(float bw);
-void Draw_Iso(float bw);
-void Draw_Iso_Atoms(float bw);
-void Iso_Test(float bw);
+void Draw_Vox_Full();
+void Draw_Vox_Pinhole();
+void Draw_Iso();
+void Draw_Iso_Atoms();
+void Iso_Test();
 void Draw_Wire();
 void Draw_Rho();
 void Draw_Atoms();
 void Draw();
 
-const char* atom_file = "Other/Iro2.dump";
+float bw = 1.25;
+typedef void (*Draw_Call)();
+Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Iso, Draw_Rho, Draw_Wire,Draw_Vox_Full};
+void Draw(){
+    while (!rend->is_open()) {
+        //UI stuff
+        //rend->Set_Uniforms(l_src);
+        rend->Draw_Pass();
+        //rend->Draw();
+        if(Sim->Is_Init()){
+            for(int i = 0; i<rend->num_calls; i++){
+                int idx = rend->calls[i];
+                Draw_Funcs[idx]();
+            }
+        }
+        if (Sim->Need_Update()) {
+            Sim->Updated();
+        }
+        rend->poll();
+    }
+
+}
+
+
+const char* atom_file = "Other/IrO2.dump";
 
 const char* rho_file = "/Users/diggs/Desktop/VolumeData/out-Q0-rho-10-01-24/Q0-rho.dat";
 
 int main(int argc, const char * argv[]) {
-    const char* FT = "lammps";
-    Sim->Init(atom_file, FT);
-    Atoms_Mesh ats;
-    ats.Set_Data();
-    rend.Push_Mesh(ats);
+    //Sim->Init(atom_file, 0);
     Draw();
     return 0;
 }
@@ -93,131 +113,140 @@ int main(int argc, const char * argv[]) {
 // User needs to select a file, file type, calculation.
 // User should be able to render any combination of 
 // Atoms, voxels, voxelized atoms, bonds, iso-surface, voxel wire frame.
-//
+/*
+        */
 //It should look like 
 //main{
 //Renderer->Draw(); so then Draw() should have a list of function pointers that have specific draw calls.
 //all func ptrs should be void. Sim has all info so no arguments should be needed.
 //
 
+
+
+
 void Draw_Atoms(){
-    
-    Sim_Box_Mesh sbm;
-    
-    Atoms_Mesh ats;
-    ats.Set_Data();
-    while (!rend.is_open()) {
+    static bool init = false;
+    static Sim_Box_Mesh sbm;
+    static Atoms_Mesh ats;
+    if(!Sim->Is_Init()){return;}
+    if(!init){
+        rend->Push_Mesh(sbm);
+        rend->Push_Mesh(ats);
+        sbm.Set_Data();
+        ats.Set_Data();
+        op->Set();
+        ats.Set_Uniforms(l_src);
+        sbm.Set_Uniforms(l_src);
+        init = true;
+    }
+        if(op->need_update){
+            op->Set();
+            ats.Set_Uniforms(l_src);
+            sbm.Set_Uniforms(l_src);
+            op->need_update = false;
+        }
+    sbm.Set_Shader();
+    sbm.Draw();
+
+    ats.Set_Shader();
+    ats.Draw();
+    if (Sim->Need_Update()) {
+        ats.Set_Data();
+    }
+}
+
+
+
+
+void Draw_Vector_Field(){
+    static bool init = false;
+    static Vector_Mesh vm;
+    static Array_of_H2O h2o;
+    if(!Sim->Is_Init()){return;}
+    if(!init){
+        rend->Push_Mesh(vm);
+        h2o.Comp_H2O();
+        vm.Set_Data(h2o);
+        op->Set();
+        vm.Set_Uniforms(l_src);
+        init = true;
+    }
+        if(op->need_update){
+            op->Set();
+            vm.Set_Uniforms(l_src);
+            op->need_update = false;
+        }
+    vm.Set_Shader();
+    vm.Draw();
+
+    if (Sim->Need_Update()) {
+        h2o.Comp_H2O();
+        vm.Set_Data(h2o);
+    }
+}
+
+
+
+
+
+void Draw_Vox_Full(){
+    TOPCon hist;
+    hist.GPU_Compute_X(bw);
+    Voxel_Mesh vx;
+    vx.Set_Data(hist);
+
+    //PinHole ph;
+    //ph.Compute_Volume(hist);
+    //Voxel_Mesh2 vx2;
+    //vx2.Set_Data(ph);
+
+
+    //float v, si, ox;
+    //ui.Push_Item("average x", &v);
+    //ui.Push_Item("Num Si", &si);
+    //ui.Push_Item("Num O", &ox);
+    //si = ph.Get_Num_Si();
+    //ox = ph.Get_Num_Ox();
+    //v = ox / si;
+    //ph.Write_Data();
         //General stuff
         if(op->need_update){
             op->Set();
-            sbm.Set_Uniforms();
-            ats.Set_Uniforms(l_src);
+            vx.Set_Uniforms();
+            //vx2.Set_Uniforms();
             op->need_update = false;
         }
-        rend.Draw_Pass();
-        
-        sbm.Set_Shader();
-        sbm.Draw();
-        
-        ats.Set_Shader();
-        ats.Draw();
-        
-        
-        rend.poll();
-        
+
+        //UI stuff
+
+
+
+
+        //vx2.Set_Shader();
+        //vx2.Draw();
+
+        vx.Set_Shader();
+        vx.Draw();
+
+
+
         if (Sim->Need_Update()) {
-            ats.Set_Data();
+            hist.GPU_Compute_X(bw);
+            //ph.Compute_Volume(hist);
+            vx.Set_Data(hist);
+            //vx2.Set_Data(ph);
+
+            //si = ph.Get_Num_Si();
+            //ox = ph.Get_Num_Ox();
+            //v = ox / si;
+            //ph.Write_Data();
             Sim->Updated();
         }
-         
+
     }
-    
-}
 
 
 
-
-void Draw(){
-
-    while (!rend.is_open()) {
-        //UI stuff
-        rend.Set_Uniforms(l_src);
-        rend.Draw_Pass();
-        rend.Draw();
-        rend.poll();
-    }
-    
-}
-
-
-
-
-
-
-
-
-
- void Draw_Vox_Full(float bw){
-     TOPCon hist;
-     hist.GPU_Compute_X(bw);
-     Voxel_Mesh vx;
-     vx.Set_Data(hist);
-     
-     //PinHole ph;
-     //ph.Compute_Volume(hist);
-     //Voxel_Mesh2 vx2;
-     //vx2.Set_Data(ph);
-     
-     
-     //float v, si, ox;
-     //ui.Push_Item("average x", &v);
-     //ui.Push_Item("Num Si", &si);
-     //ui.Push_Item("Num O", &ox);
-     //si = ph.Get_Num_Si();
-     //ox = ph.Get_Num_Ox();
-     //v = ox / si;
-     //ph.Write_Data();
-     while (!rend.is_open()) {
-         //General stuff
-         if(op->need_update){
-             op->Set();
-             vx.Set_Uniforms();
-             //vx2.Set_Uniforms();
-             op->need_update = false;
-         }
-         
-         //UI stuff
-         
-         
-         rend.Draw_Pass();
-         
-         
-         //vx2.Set_Shader();
-         //vx2.Draw();
-         
-         vx.Set_Shader();
-         vx.Draw();
-        
-         
-         rend.poll();
-         
-         if (Sim->Need_Update()) {
-             hist.GPU_Compute_X(bw);
-             //ph.Compute_Volume(hist);
-             vx.Set_Data(hist);
-             //vx2.Set_Data(ph);
-             
-             //si = ph.Get_Num_Si();
-             //ox = ph.Get_Num_Ox();
-             //v = ox / si;
-             //ph.Write_Data();
-             Sim->Updated();
-         }
-          
-     }
-      
-     
- }
 
 
 void Draw_Rho(){
@@ -233,10 +262,9 @@ void Draw_Rho(){
     iso.Set_Data(rho);
     Atoms_Mesh ats;
     //ats.Set_Data(rho);
-    
-    
-    
-    while (!rend.is_open()) {
+
+
+
         //General stuff
         if(op->need_update){
             op->Set();
@@ -244,38 +272,28 @@ void Draw_Rho(){
             ats.Set_Uniforms(l_src);
             op->need_update = false;
         }
-        
+
         //UI stuff
-        
+
         //Framebuffer/Shadowmap pass
         //sm.Set_MLP(l_src);
         //sm.Pass();
         //iso.Draw();
-        
-        rend.Draw_Pass();
-        
+
+
         ats.Set_Shader();
         ats.Draw();
-        
+
         iso.Set_Grid_Shader();
         iso.Draw();
-        
+
         iso.Set_Shader();
         iso.Draw();
-        
-        
-        
-        
-        rend.poll();
-         
-    }
-     
-    
 }
 
 
-void Draw_Vox_Pinhole(float bw){
-    
+void Draw_Vox_Pinhole(){
+
     TOPCon hist;
     //hist.Compute_X(bw);
     hist.GPU_Compute_X(bw);
@@ -283,31 +301,28 @@ void Draw_Vox_Pinhole(float bw){
     ph.Compute_Volume(hist);
     Voxel_Mesh vx;
     vx.Set_Data(ph);
-    
+
     float v, si, ox;
     v = ph.Get_Volume();
     si = (float)ph.Get_Num_Si();
     ox = (float)ph.Get_Num_Ox();
     ph.Write_Data();
-    while (!rend.is_open()) {
         //General stuff
         if(op->need_update){
             op->Set();
             vx.Set_Uniforms();
             op->need_update = false;
         }
-        
+
         //UI stuff
-        
-        
-        rend.Draw_Pass();
-        
+
+
+
         vx.Set_Shader();
         vx.Draw();
-       
-        
-        rend.poll();
-        
+
+
+
         if (Sim->Need_Update()) {
             hist.GPU_Compute_X(bw);
             ph.Compute_Volume(hist);
@@ -318,17 +333,16 @@ void Draw_Vox_Pinhole(float bw){
             ph.Write_Data();
             Sim->Updated();
         }
-         
-    }
-         
-    
+
+
+
 }
 
 
 
-void Draw_Iso(float bw){
+void Draw_Iso(){
     ShadowMap sm(1000,1000);
-    
+
     TOPCon hist;
     hist.GPU_Compute_X(bw);
     AMD::Vec4 clr1(0.5,0.75,1.0,0.6);
@@ -336,39 +350,36 @@ void Draw_Iso(float bw){
     Iso_Mesh iso(0.5);
     iso.Set_Color(clr1);
     iso.Set_Data(hist);
-    
+
     float del;
     del = iso.Get_Area();
     std::ofstream O_file;
     const char* out_file_name = "/Users/diggs/Desktop/Ph-Area-100000.txt";
     O_file.open(out_file_name, std::ios::out);
     O_file << "#Timestep Area\n";
-    while (!rend.is_open()) {
         //General stuff
         if(op->need_update){
             op->Set();
             iso.Set_Uniforms(l_src);
             op->need_update = false;
         }
-        
-        
+
+
         //Framebuffer/Shadowmap pass
         sm.Set_MLP(l_src);
         sm.Pass();
         iso.Draw();
-        
-        rend.Draw_Pass();
-        
+
+
         iso.Set_Grid_Shader();
         iso.Draw_Grid();
-        
+
         iso.Set_Shader();
         iso.Set_ShadowMap(sm);
         iso.Draw();
-        
-        
-        rend.poll();
-        
+
+
+
         if (Sim->Need_Update()) {
             hist.GPU_Compute_X(bw);
             iso.Set_Data(hist);
@@ -376,16 +387,15 @@ void Draw_Iso(float bw){
             O_file << Sim->Timestep() << " " << del << std::endl;
             Sim->Updated();
         }
-         
-    }
-         
-    
+
+
+
 }
 
 
-void Draw_Iso_Atoms(float bw){
+void Draw_Iso_Atoms(){
     ShadowMap sm(1000,1000);
-    
+
     TOPCon hist;
     hist.GPU_Compute_X(bw);
     AMD::Vec4 clr1(0.5,0.75,1.0,0.7);
@@ -393,15 +403,14 @@ void Draw_Iso_Atoms(float bw){
     Iso_Mesh iso(0.5);
     iso.Set_Color(clr1);
     iso.Set_Data(hist);
-    
+
     Atoms_Mesh ats;
     ats.Set_Data();
-    
+
     Bond_Mesh bm;
     bm.Set_Data();
     float del;
     del = iso.Get_Area();
-    while (!rend.is_open()) {
         //General stuff
         if(op->need_update){
             op->Set();
@@ -410,31 +419,29 @@ void Draw_Iso_Atoms(float bw){
             bm.Set_Uniforms();
             op->need_update = false;
         }
-        
-        
+
+
         //Framebuffer/Shadowmap pass
         //sm.Set_MLP(l_src);
         //sm.Pass();
         //iso.Draw();
-        
-        rend.Draw_Pass();
-        
+
+
         ats.Set_Shader();
         ats.Draw();
-        
+
         bm.Set_Shader();
         bm.Draw();
-        
+
         iso.Set_Grid_Shader();
         iso.Draw_Grid();
-        
+
         iso.Set_Shader();
         iso.Set_ShadowMap(sm);
         iso.Draw();
-        
-        
-        rend.poll();
-        
+
+
+
         if (Sim->Need_Update()) {
             hist.GPU_Compute_X(bw);
             iso.Set_Data(hist);
@@ -443,38 +450,36 @@ void Draw_Iso_Atoms(float bw){
             bm.Set_Data();
             Sim->Updated();
         }
-         
-    }
-   
+
+
 }
 
-void Iso_Test(float bw){
+void Iso_Test(){
     ShadowMap sm(1000,1000);
     int d = 4;
     int r = 4;
     int c = 4;
     float*** fake_dat = Build_Arr(d, r, c);
     AMD::Vec3 basis[4];
-    
+
     basis[0] = AMD::Vec3(0.0,0.0,0.0);
     basis[1] = AMD::Vec3(1.0,0.0,0.0);
     basis[2] = AMD::Vec3(1.0,1.0,0.0);
     basis[3] = AMD::Vec3(0.0,1.0,0.0);
-    
+
     Iso_Mesh iso;
     iso.Set_Data(fake_dat,d,r,c);
     iso.Compute_Normals();
-    
+
     Sphere_Mesh spm;
     spm.Set_Data(fake_dat, d, r, c);
-    
+
     Vector_Mesh vm;
     vm.Set_Data(iso.Get_Normals(), iso.num_normals);
-    
+
     Grid_3D gr(d,r,c);
-    
-    
-    while (!rend.is_open()) {
+
+
         //General stuff
         if(op->need_update){
             op->Set();
@@ -484,73 +489,59 @@ void Iso_Test(float bw){
             gr.Set_Uniforms();
             op->need_update = false;
         }
-        
+
         //UI stuff
         //ui.log_window(hist);
-        
+
         //Framebuffer/Shadowmap pass
         sm.Set_MLP(l_src);
         sm.Pass();
         iso.Draw();
-        
-        rend.Draw_Pass();
-        
-        
+
+
+
         iso.Set_Shader();
         iso.Set_ShadowMap(sm);
         iso.Draw();
-        
+
         iso.Set_Grid_Shader();
         iso.Draw();
-        
-        
+
+
         spm.Set_Shader();
         spm.Draw();
-        
+
         vm.Set_Shader();
         vm.Draw();
         gr.Set_Shader();
         gr.Draw();
-        rend.poll();
-        
+
         if (Sim->Need_Update()) {
             iso.Set_Data(fake_dat,d,r,c);
             Sim->Updated();
-        }
-         
+
     }
     Delete_Arr(fake_dat, d, r);
-    
+
 }
 
 void Draw_Wire(){
     const char* file = "/Users/diggs/Desktop/PES/LJ.txt";
     Wire_Frame wf;
     wf.Set_Data(file);
-    while (!rend.is_open()) {
         //General stuff
         if(op->need_update){
             op->Set();
             wf.Set_Uniforms();
             op->need_update = false;
         }
-        
+
         //UI stuff
-        
-        
-        rend.Draw_Pass();
-        
+
+
+
         wf.Set_Shader();
         wf.Draw();
-       
-        
-        rend.poll();
-        
-      
-         
-    }
-     
-    
 }
 
 
@@ -582,7 +573,7 @@ void Delete_Arr(float*** arr,int depth, int rows){
         }
         free(arr[i]);
     }
-    
+
     free(arr);
 }
 
@@ -593,32 +584,28 @@ void Draw_Vox_Sphere(){
     Voxelize sp;
     Voxel_Mesh vx;
     vx.Set_Data(sp.Get_Vox(), sp.Get_Num_Vox());
-    while (!rend.is_open()) {
         //General stuff
         if(op->need_update){
             op->Set();
             vx.Set_Uniforms();
             op->need_update = false;
         }
-        
+
         //UI stuff
-        
-        
-        rend.Draw_Pass();
-        
+
+
+
         vx.Set_Shader();
         vx.Draw();
-       
-        
-        rend.poll();
-        
+
+
+
         if (Sim->Need_Update()) {
             Sim->Updated();
         }
-         
-    }
-     
-    
+
+
+
 }
 
 
@@ -629,80 +616,80 @@ void Draw_Vox_Sphere(){
 
 
 
- 
- /*
- 
- void Draw_Hcon(float bw){
-     
-     Data_3D hist;
-     hist.Compute_Hcon(bw);
-     Voxel_Mesh vx;
-     vx.Set_Data(hist);
-     
-     while (!rend.is_open()) {
-         //General stuff
-         if(op->need_update){
-             op->Set();
-             vx.Set_Uniforms();
-             op->need_update = false;
-         }
-         
-         //UI stuff
-         ui.NewFrame();
-         ui.Simple_window(l_src);
-         
-         
-         rend.Draw_Pass();
-         
-         vx.Set_Shader();
-         vx.Draw();
-        
-         
-         ui.render();
-         rend.poll();
-         
-         if (Sim->Need_Update()) {
-             hist.Compute_Hcon(bw);
-             vx.Set_Data(hist);
-             Sim->Updated();
-         }
-          
-     }
-          
-     
- }
+
+/*
+
+   void Draw_Hcon(float bw){
+
+   Data_3D hist;
+   hist.Compute_Hcon(bw);
+   Voxel_Mesh vx;
+   vx.Set_Data(hist);
+
+   while (!rend.is_open()) {
+//General stuff
+if(op->need_update){
+op->Set();
+vx.Set_Uniforms();
+op->need_update = false;
+}
+
+//UI stuff
+ui.NewFrame();
+ui.Simple_window(l_src);
 
 
- 
+rend.Draw_Pass();
 
-  
-  float*** Build_Arr(int depth, int rows, int cols){
-      float*** vals = (float***)malloc(depth*sizeof(float**));
-      for (int i = 0; i<depth; i++){
-          vals[i] = (float**)malloc(rows*sizeof(float*));
-          for(int j = 0; j< rows; j++){
-              vals[i][j] = (float*)malloc(cols*sizeof(float));
-              for(int k = 0; k<cols; k++){
-                  if(j == 1){vals[i][j][k] = 1.0;}
-                  else{vals[i][j][k] = 0.0;} //rnd(gen);
-              }
-          }
-      }
-      return vals;
-  }
+vx.Set_Shader();
+vx.Draw();
 
 
-  void Delete_Arr(float*** arr,int depth, int rows){
-      for (int i =0; i<depth; i++){
-          for(int j = 0; j < rows; j++){
-              free(arr[i][j]);
-          }
-          free(arr[i]);
-      }
-      
-      free(arr);
-  }
+ui.render();
+rend.poll();
+
+if (Sim->Need_Update()) {
+hist.Compute_Hcon(bw);
+vx.Set_Data(hist);
+Sim->Updated();
+}
+
+}
+
+
+}
 
 
 
- */
+
+
+float*** Build_Arr(int depth, int rows, int cols){
+float*** vals = (float***)malloc(depth*sizeof(float**));
+for (int i = 0; i<depth; i++){
+vals[i] = (float**)malloc(rows*sizeof(float*));
+for(int j = 0; j< rows; j++){
+vals[i][j] = (float*)malloc(cols*sizeof(float));
+for(int k = 0; k<cols; k++){
+if(j == 1){vals[i][j][k] = 1.0;}
+else{vals[i][j][k] = 0.0;} //rnd(gen);
+}
+}
+}
+return vals;
+}
+
+
+void Delete_Arr(float*** arr,int depth, int rows){
+for (int i =0; i<depth; i++){
+for(int j = 0; j < rows; j++){
+free(arr[i][j]);
+}
+free(arr[i]);
+}
+
+free(arr);
+}
+
+
+
+*/

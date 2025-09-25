@@ -29,6 +29,16 @@ enum Coords_Type {lattice, cartiesian};
 Coords_Type coords_type;
 AMD::Mat3 Scale;
 
+bool Check_File(const char* file){
+    std::ifstream infile(file, std::ios_base::in);
+    if (!infile.is_open()){
+        return false;
+    }
+    else{
+        infile.close();
+        return true;
+    }
+}
 int FT_Hash(const char* ft){
     int val = 0;
     for(int i =0; i<strlen(ft); i++){
@@ -37,23 +47,44 @@ int FT_Hash(const char* ft){
     return val % 10;
 }
 
-void Set_File_Type(const char* ft){
+bool Check_FT(const char* ft){
     int hs = FT_Hash(ft);
+    bool ret = false;
     switch (hs) {
+        case 0:
+            ret = true;
+            break;
+        case 8:
+            ret = true;
+            break;
+        case 3:
+            ret = true;
+            break;
+        case 7:
+            ret = true;
+            break;
+        case 4:
+            ret = true;
+            break;
+        default:
+            break;
+    }
+    return ret;
+}
+
+void Set_File_Type(int ft){
+    switch (ft) {
         case 0:
             file_type = lammps;
             break;
-        case 8:
-            file_type = lammps;
+        case 1:
+            file_type = qe;
+            break;
+        case 2:
+            file_type = jdftx;
             break;
         case 3:
             file_type = ase;
-            break;
-        case 7:
-            file_type = ase;
-            break;
-        case 4:
-            file_type = jdftx;
             break;
         default:
             file_type = lammps;
@@ -497,7 +528,7 @@ void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
 
 Dump_Arr::Dump_Arr(){}
 
-void Dump_Arr::Init(const char* dat_file, const char* ft){
+void Dump_Arr::Init(const char* dat_file, int ft){
     //Read in data file
     std::ifstream infile(dat_file, std::ios_base::in);
     if (!infile.is_open()){
