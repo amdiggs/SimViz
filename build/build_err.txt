@@ -8,7 +8,7 @@ __deprecated_msg("This function is provided for compatibility reasons only.  Due
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:215:48: note: expanded from macro '__deprecated_msg'
         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
                                                       ^
-..//Rendering/Render.cpp:320:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+..//Rendering/Render.cpp:323:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
             sprintf(buf1,"File %s was not found\n",atom_file);
             ^
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h:188:1: note: 'sprintf' has been explicitly marked deprecated here
@@ -17,7 +17,7 @@ __deprecated_msg("This function is provided for compatibility reasons only.  Due
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:215:48: note: expanded from macro '__deprecated_msg'
         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
                                                       ^
-..//Rendering/Render.cpp:323:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+..//Rendering/Render.cpp:326:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
             sprintf(buf1,"File type must be selected");
             ^
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h:188:1: note: 'sprintf' has been explicitly marked deprecated here
@@ -27,7 +27,7 @@ __deprecated_msg("This function is provided for compatibility reasons only.  Due
         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
                                                       ^
 3 warnings generated.
-In file included from ..//Rendering/Meshes.cpp:17:
+In file included from ..//Rendering/Meshes.cpp:19:
 ..//Rendering/CubeMarchTable.h:75:21: warning: field 'num_tri' will be initialized after field 'is_set' [-Wreorder-ctor]
     cube_table_el():num_tri(0), is_set(false){};
                     ^~~~~~~~~~  ~~~~~~~~~~~~~
@@ -44,52 +44,49 @@ In file included from ..//Rendering/Meshes.cpp:17:
     int one[1][3] = {0,3,8};
                      ^~~~~
                      {    }
-..//Rendering/Meshes.cpp:556:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
+..//Rendering/Meshes.cpp:715:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
 :m_sh(shader_file), grid_sh(grid_shader_file),m_cut(0.25), m_count(0), vox_len(1.0, 1.0, 1.0)
                                               ^~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~
                                               m_count(0)   vox_len(1.0, 1.0, 1.0) m_cut(0.25)
-..//Rendering/Meshes.cpp:571:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
+..//Rendering/Meshes.cpp:730:47: warning: field 'm_cut' will be initialized after field 'm_count' [-Wreorder-ctor]
 :m_sh(shader_file), grid_sh(grid_shader_file),m_cut(cut), m_count(0), vox_len(1.0, 1.0, 1.0)
                                               ^~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~
                                               m_count(0)  vox_len(1.0, 1.0, 1.0) m_cut(cut)
-..//Rendering/Meshes.cpp:1725:66: warning: field 'm_lo' will be initialized after field 'm_range' [-Wreorder-ctor]
+..//Rendering/Meshes.cpp:1762:66: warning: field 'm_lo' will be initialized after field 'm_range' [-Wreorder-ctor]
 :m_dir(Get_Basis(axis)) ,m_origin(start), m_num_ticks(num_ticks),m_lo(lo),m_range(high - lo), m_data_type(type)
                                                                  ^~~~~~~~ ~~~~~~~~~~~~~~~~~~
                                                                  m_range(high - lo) m_lo(lo)
-..//Rendering/Meshes.cpp:1863:43: warning: field 'm_row_width' will be initialized after field 'm_cols' [-Wreorder-ctor]
+..//Rendering/Meshes.cpp:1900:43: warning: field 'm_row_width' will be initialized after field 'm_cols' [-Wreorder-ctor]
 :m_sh(shader_file),  m_rows(hist.m_rows), m_row_width(hist.m_bin_width_z), m_cols(hist.m_cols), m_col_width(hist.m_bin_width_x)
                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~
                                           m_cols(hist.m_cols)              m_row_width(hist.m_bin_width_z)
-..//Rendering/Meshes.cpp:1973:21: warning: field 'm_cols' will be initialized after field 'm_rows' [-Wreorder-ctor]
+..//Rendering/Meshes.cpp:2010:21: warning: field 'm_cols' will be initialized after field 'm_rows' [-Wreorder-ctor]
 :m_sh(shader_file), m_cols(hist.m_cols), m_rows(hist.m_rows)
                     ^~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~
                     m_rows(hist.m_rows)  m_cols(hist.m_cols)
-..//Rendering/Meshes.cpp:2008:11: warning: variable 'val' set but not used [-Wunused-but-set-variable]
+..//Rendering/Meshes.cpp:2045:11: warning: variable 'val' set but not used [-Wunused-but-set-variable]
     float val = 0;
           ^
 In file included from ..//Rendering/Meshes.cpp:8:
-..//Rendering/Meshes.hpp:142:18: warning: private field 'm_vb_verts' is not used [-Wunused-private-field]
-    unsigned int m_vb_verts;
-                 ^
-..//Rendering/Meshes.hpp:143:18: warning: private field 'm_inst_vb' is not used [-Wunused-private-field]
-    unsigned int m_inst_vb;
-                 ^
-..//Rendering/Meshes.hpp:168:17: warning: private field 'm_sampler' is not used [-Wunused-private-field]
-    const char* m_sampler = "Draw";
-                ^
-..//Rendering/Meshes.hpp:314:29: warning: private field 'm_clr_vbo' is not used [-Wunused-private-field]
-    unsigned int m_pos_vbo, m_clr_vbo;
-                            ^
-..//Rendering/Meshes.hpp:340:18: warning: private field 'm_pos_vbo' is not used [-Wunused-private-field]
+..//Rendering/Meshes.hpp:142:18: warning: private field 'm_pos_vbo' is not used [-Wunused-private-field]
     unsigned int m_pos_vbo;
                  ^
-..//Rendering/Meshes.hpp:568:17: warning: private field 'm_sampler' is not used [-Wunused-private-field]
+..//Rendering/Meshes.hpp:196:18: warning: private field 'm_vb_verts' is not used [-Wunused-private-field]
+    unsigned int m_vb_verts;
+                 ^
+..//Rendering/Meshes.hpp:197:18: warning: private field 'm_inst_vb' is not used [-Wunused-private-field]
+    unsigned int m_inst_vb;
+                 ^
+..//Rendering/Meshes.hpp:222:17: warning: private field 'm_sampler' is not used [-Wunused-private-field]
+    const char* m_sampler = "Draw";
+                ^
+..//Rendering/Meshes.hpp:570:17: warning: private field 'm_sampler' is not used [-Wunused-private-field]
     const char* m_sampler = "Text_Tex";
                 ^
-..//Rendering/Meshes.hpp:575:18: warning: private field 'm_num_chars' is not used [-Wunused-private-field]
+..//Rendering/Meshes.hpp:577:18: warning: private field 'm_num_chars' is not used [-Wunused-private-field]
     unsigned int m_num_chars;
                  ^
-17 warnings generated.
+16 warnings generated.
 In file included from ..//Rendering/FrameBuffer.cpp:8:
 ..//Rendering/FrameBuffer.hpp:27:15: warning: private field 'm_layer' is not used [-Wunused-private-field]
     const int m_layer = 9;
@@ -123,56 +120,80 @@ In file included from ..//Rendering/shader.cpp:8:
     int m_locs[num_locs];
         ^
 1 warning generated.
-..//Rendering/Shapes.cpp:302:45: warning: unused variable 'zf' [-Wunused-variable]
+..//Rendering/Shapes.cpp:303:45: warning: unused variable 'zf' [-Wunused-variable]
     float c = 0.99; float zb = -2.99; float zf = 0.99;
                                             ^
-..//Rendering/Shapes.cpp:427:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
+..//Rendering/Shapes.cpp:428:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
 :m_dimensions(dim), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
  ^~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~
  m_num_verts(4*num_slices) m_num_idx(6*num_slices) m_dimensions(dim)
-..//Rendering/Shapes.cpp:434:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
+..//Rendering/Shapes.cpp:435:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
 :m_dimensions(w,h,d), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
  ^~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~
  m_num_verts(4*num_slices) m_num_idx(6*num_slices) m_dimensions(w,h,d)
-..//Rendering/Shapes.cpp:509:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
+..//Rendering/Shapes.cpp:510:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
 :m_dimensions(dim), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
  ^~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~
  m_num_verts(4*num_slices) m_num_idx(6*num_slices) m_dimensions(dim)
-..//Rendering/Shapes.cpp:516:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
+..//Rendering/Shapes.cpp:517:2: warning: field 'm_dimensions' will be initialized after field 'm_num_verts' [-Wreorder-ctor]
 :m_dimensions(w,h,d), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
  ^~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~
  m_num_verts(4*num_slices) m_num_idx(6*num_slices) m_dimensions(w,h,d)
-..//Rendering/Shapes.cpp:1021:2: warning: initializer order does not match the declaration order [-Wreorder-ctor]
-:m_len(3.0), m_rad(0.5), m_dz(0.1)
- ^~~~~~~~~~              ~~~~~~~~~
- m_dz(0.1)               m_len(3.0)
-..//Rendering/Shapes.cpp:1021:2: note: field 'm_len' will be initialized after field 'm_rad'
-:m_len(3.0), m_rad(0.5), m_dz(0.1)
- ^~~~~~~~~~
-..//Rendering/Shapes.cpp:1021:14: note: field 'm_rad' will be initialized after field 'm_dz'
-:m_len(3.0), m_rad(0.5), m_dz(0.1)
-             ^~~~~~~~~~
-..//Rendering/Shapes.cpp:1030:2: warning: field 'm_len' will be initialized after field 'm_dz' [-Wreorder-ctor]
-:m_len(e_len), m_dz(10.0/e_len)
- ^~~~~~~~~~~~  ~~~~~~~~~~~~~~~~
- m_dz(10.0/e_len) m_len(e_len)
-..//Rendering/Shapes.cpp:1155:2: warning: field 'm_len' will be initialized after field 'm_rad' [-Wreorder-ctor]
+..//Rendering/Shapes.cpp:1153:2: warning: field 'm_len' will be initialized after field 'm_rad' [-Wreorder-ctor]
 :m_len(e_len), m_rad(0.5){
  ^~~~~~~~~~~~  ~~~~~~~~~~
  m_rad(0.5)    m_len(e_len)
-..//Rendering/Shapes.cpp:1162:2: warning: field 'm_len' will be initialized after field 'm_rad' [-Wreorder-ctor]
+..//Rendering/Shapes.cpp:1160:2: warning: field 'm_len' will be initialized after field 'm_rad' [-Wreorder-ctor]
 :m_len(3.0), m_rad(0.5)
  ^~~~~~~~~~  ~~~~~~~~~~
  m_rad(0.5)  m_len(3.0)
-..//Rendering/Shapes.cpp:1560:2: warning: field 'm_row_width' will be initialized after field 'm_w' [-Wreorder-ctor]
+..//Rendering/Shapes.cpp:1179:2: warning: initializer order does not match the declaration order [-Wreorder-ctor]
+:m_zlo(0.0), m_zhi(1.0), m_rlo(1.0), m_rhi(0.0)
+ ^~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~
+ m_zhi(1.0)  m_zlo(0.0)  m_rhi(0.0)  m_rlo(1.0)
+..//Rendering/Shapes.cpp:1179:2: note: field 'm_zlo' will be initialized after field 'm_zhi'
+:m_zlo(0.0), m_zhi(1.0), m_rlo(1.0), m_rhi(0.0)
+ ^~~~~~~~~~
+..//Rendering/Shapes.cpp:1179:26: note: field 'm_rlo' will be initialized after field 'm_rhi'
+:m_zlo(0.0), m_zhi(1.0), m_rlo(1.0), m_rhi(0.0)
+                         ^~~~~~~~~~
+..//Rendering/Shapes.cpp:1187:2: warning: initializer order does not match the declaration order [-Wreorder-ctor]
+:m_zlo(zlo), m_zhi(zhi), m_rlo(rlo), m_rhi(rhi)
+ ^~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~
+ m_zhi(zhi)  m_zlo(zlo)  m_rhi(rhi)  m_rlo(rlo)
+..//Rendering/Shapes.cpp:1187:2: note: field 'm_zlo' will be initialized after field 'm_zhi'
+:m_zlo(zlo), m_zhi(zhi), m_rlo(rlo), m_rhi(rhi)
+ ^~~~~~~~~~
+..//Rendering/Shapes.cpp:1187:26: note: field 'm_rlo' will be initialized after field 'm_rhi'
+:m_zlo(zlo), m_zhi(zhi), m_rlo(rlo), m_rhi(rhi)
+                         ^~~~~~~~~~
+..//Rendering/Shapes.cpp:1310:11: warning: unused variable 'z_offset' [-Wunused-variable]
+    float z_offset = cyl.max_z;
+          ^
+..//Rendering/Shapes.cpp:1408:2: warning: field 'm_row_width' will be initialized after field 'm_w' [-Wreorder-ctor]
 :m_row_width(0.0), m_w(cols*col_width), m_h(rows*row_width), m_num_cols(cols), m_num_rows(rows)
  ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~
  m_w(cols*col_width) m_h(rows*row_width)m_row_width(0.0)
 In file included from ..//Rendering/Shapes.cpp:8:
-..//Rendering/Shapes.hpp:332:11: warning: private field 'm_length' is not used [-Wunused-private-field]
+..//Rendering/Shapes.hpp:330:11: warning: private field 'm_len' is not used [-Wunused-private-field]
+    float m_len;
+          ^
+..//Rendering/Shapes.hpp:331:11: warning: private field 'm_rad' is not used [-Wunused-private-field]
+    float m_rad;
+          ^
+..//Rendering/Shapes.hpp:332:11: warning: private field 'm_dz' is not used [-Wunused-private-field]
+    float m_dz;
+          ^
+..//Rendering/Shapes.hpp:357:11: warning: private field 'm_length' is not used [-Wunused-private-field]
     float m_length;
           ^
-11 warnings generated.
+..//Rendering/Shapes.hpp:358:9: warning: private field 'm_num_z' is not used [-Wunused-private-field]
+    int m_num_z;
+        ^
+..//Rendering/Shapes.hpp:359:11: warning: private field 'text_id' is not used [-Wunused-private-field]
+    float text_id;
+          ^
+17 warnings generated.
 In file included from ..//SimViz/Computes.cpp:13:
 ..//SimViz/MyOpenCL/ErrorLogging.h:8:13: warning: unused variable 'test' [-Wunused-variable]
         int test = 4;
@@ -202,7 +223,7 @@ static void Print_Result(float* res, int num){
 :init(false), dump_num_atoms(0), scale(1.0,1.0,1.0)
  ^~~~~~~~~~~  ~~~~~~~~~~~~~~~~~
  dump_num_atoms(0) init(false)
-..//SimViz/FileIO.cpp:560:17: warning: unused variable 'out_file' [-Wunused-variable]
+..//SimViz/FileIO.cpp:558:17: warning: unused variable 'out_file' [-Wunused-variable]
     const char* out_file = "/Users/diggs/Desktop/";
                 ^
 2 warnings generated.
@@ -213,21 +234,21 @@ static void Print_Result(float* res, int num){
 static bool comment(std::string str, std::string reg_ex){
             ^
 2 warnings generated.
-..//SimViz/Atomic.cpp:347:19: warning: field 'm_curr_block' will be initialized after field 'm_num_atoms' [-Wreorder-ctor]
+..//SimViz/Atomic.cpp:354:19: warning: field 'm_curr_block' will be initialized after field 'm_num_atoms' [-Wreorder-ctor]
 :m_num_blocks(0), m_curr_block(0),m_num_atoms(0), m_init(false), shift(0.0,0.0,0.0) {}
  ~~~~~~~~~~~~~~~  ^~~~~~~~~~~~~~~ ~~~~~~~~~~~~~~
  m_num_atoms(0)   m_num_blocks(0) m_curr_block(0)
 1 warning generated.
-..//SimViz/main.cpp:278:18: warning: variable 'ox' set but not used [-Wunused-but-set-variable]
-    float v, si, ox;
-                 ^
-..//SimViz/main.cpp:278:14: warning: variable 'si' set but not used [-Wunused-but-set-variable]
+..//SimViz/main.cpp:305:14: warning: variable 'si' set but not used [-Wunused-but-set-variable]
     float v, si, ox;
              ^
-..//SimViz/main.cpp:278:11: warning: variable 'v' set but not used [-Wunused-but-set-variable]
+..//SimViz/main.cpp:305:11: warning: variable 'v' set but not used [-Wunused-but-set-variable]
     float v, si, ox;
           ^
-..//SimViz/main.cpp:385:11: warning: variable 'del' set but not used [-Wunused-but-set-variable]
+..//SimViz/main.cpp:305:18: warning: variable 'ox' set but not used [-Wunused-but-set-variable]
+    float v, si, ox;
+                 ^
+..//SimViz/main.cpp:412:11: warning: variable 'del' set but not used [-Wunused-but-set-variable]
     float del;
           ^
 4 warnings generated.

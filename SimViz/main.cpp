@@ -73,11 +73,12 @@ void Iso_Test();
 void Draw_Wire();
 void Draw_Rho();
 void Draw_Atoms();
+void Draw_Vector_Field();
 void Draw();
 
 float bw = 1.25;
 typedef void (*Draw_Call)();
-Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Iso, Draw_Rho, Draw_Wire,Draw_Vox_Full};
+Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Vector_Field, Draw_Rho, Draw_Wire,Draw_Vox_Full};
 void Draw(){
     while (!rend->is_open()) {
         //UI stuff
@@ -93,6 +94,7 @@ void Draw(){
         if (Sim->Need_Update()) {
             Sim->Updated();
         }
+        if(op->need_update){op->need_update=false;}
         rend->poll();
     }
 
@@ -143,7 +145,6 @@ void Draw_Atoms(){
             op->Set();
             ats.Set_Uniforms(l_src);
             sbm.Set_Uniforms(l_src);
-            op->need_update = false;
         }
     sbm.Set_Shader();
     sbm.Draw();
@@ -174,7 +175,6 @@ void Draw_Vector_Field(){
         if(op->need_update){
             op->Set();
             vm.Set_Uniforms(l_src);
-            op->need_update = false;
         }
     vm.Set_Shader();
     vm.Draw();

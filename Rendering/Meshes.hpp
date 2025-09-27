@@ -52,7 +52,7 @@ class Atoms_Mesh : public Mesh{
 private:
     VertexArray m_VAO;
     IndexBuffer m_IBO;
-    const std::string shader_file = "./Shaders/Atom.vs";
+    const std::string shader_file = "../Shaders/Atom.vs";
     int m_num_atoms;
     Shader m_sh;
     
@@ -80,7 +80,7 @@ public:
 class Bond_Mesh: public Mesh{
 private:
     VertexArray m_VAO;
-    const std::string shader_file = "./Shaders/Bond.vs";
+    const std::string shader_file = "../Shaders/Bond.vs";
     int m_num_verts;
     Shader m_sh;
     
@@ -102,10 +102,63 @@ public:
     
 };
 
+class Vector_Mesh : public Mesh{
+private:
+    VertexArray m_VAO;
+    IndexBuffer m_IBO;
+    const std::string shader_file = "../Shaders/vector.vs";
+    int m_num;
+    Shader m_sh;
+    
+    unsigned int m_pos_vbo,m_rot_vbo, m_scale_vbo;
+    AMD::Vec3* m_pos = NULL;
+    AMD::Vec3* m_rot = NULL;
+    float* m_scale = NULL;
+    bool init = false;
+    
+public:
+    
+    Vector_Mesh();
+    ~Vector_Mesh();
+    void Set_Data(AMD::Vec3* dat, int num_vec);
+    void Set_Data(const Array_of_H2O&);
+    void Draw() override;
+
+    void Set_Shader() override;
+    void Set_Uniforms() override;
+    void Set_Uniforms(Light_Src& src) override;
+};
+
+
+
+class Sim_Box_Mesh : public Mesh{
+private:
+    VertexArray m_VAO;
+    IndexBuffer m_IBO;
+    const std::string shader_file = "../Shaders/simbox.vs";
+    Shader m_sh;
+    
+    
+    unsigned int m_pos_vbo;
+    AMD::Vec3 m_pos[8];
+    unsigned int indices[24] = {0,1, 1,2, 3,2, 3,0, 0,4, 1,5, 2,6, 3,7, 4,5, 5,6, 7,6, 7,4};
+public:
+    
+    Sim_Box_Mesh();
+    ~Sim_Box_Mesh();
+    void Set_Data();
+    void Draw() override;
+
+    void Set_Shader() override;
+    void Set_Uniforms() override;
+    void Set_Uniforms(Light_Src& src) override;
+};
+
+
 
 class Wire_Frame : public Mesh{
 private:
-    const std::string shader_file = "./Shaders/wire.vs";
+    const std::string shader_file = "../Shaders/wire.vs";
     VertexArray m_VAO;
     IndexBuffer m_tri_IBO;
     IndexBuffer m_line_IBO;
@@ -136,7 +189,7 @@ public:
 
 class Grid_3D : public Mesh{
 private:
-    const std::string shader_file = "./Shaders/Simple_Grid.vs";
+    const std::string shader_file = "../Shaders/Simple_Grid.vs";
     VertexArray m_VAO;
     IndexBuffer m_IBO;
     Shader m_sh;
@@ -164,7 +217,7 @@ class Quad_Mesh: public Mesh{
 private:
     VertexArray m_VAO;
     IndexBuffer m_IBO;
-    const char* shader_file = "./Shaders/Quad.vs";
+    const char* shader_file = "../Shaders/Quad.vs";
     Shader m_sh;
     const char* m_sampler = "Draw";
     
@@ -189,7 +242,7 @@ public:
 
 class Voxel_Mesh : public Mesh{
 private:
-    const std::string shader_file = "./Shaders/Voxel.fs";
+    const std::string shader_file = "../Shaders/Voxel.fs";
     VertexArray m_VAO;
     IndexBuffer m_IBO;
     Shader m_sh;
@@ -235,7 +288,7 @@ public:
 
 class Voxel_Mesh2 : public Mesh{
 private:
-    const std::string shader_file = "./Shaders/voxel.fs";
+    const std::string shader_file = "../Shaders/voxel.fs";
     VertexArray m_VAO;
     IndexBuffer m_IBO;
     Shader m_sh;
@@ -281,7 +334,7 @@ class Sphere_Mesh : public Mesh{
 private:
     VertexArray m_VAO;
     IndexBuffer m_IBO;
-    const std::string shader_file = "./Shaders/Sphere.vs";
+    const std::string shader_file = "../Shaders/Sphere.vs";
     int m_num_sp;
     Shader m_sh;
     
@@ -301,60 +354,6 @@ public:
     void Set_Uniforms() override;
     void Set_Uniforms(Light_Src& src) override;
 };
-
-
-class Vector_Mesh : public Mesh{
-private:
-    VertexArray m_VAO;
-    IndexBuffer m_IBO;
-    const std::string shader_file = "./Shaders/vector.vs";
-    int m_num;
-    Shader m_sh;
-    
-    unsigned int m_pos_vbo,m_rot_vbo, m_scale_vbo;
-    AMD::Vec3* m_pos = NULL;
-    AMD::Vec3* m_rot = NULL;
-    float* m_scale = NULL;
-    bool init = false;
-    
-public:
-    
-    Vector_Mesh();
-    ~Vector_Mesh();
-    void Set_Data(AMD::Vec3* dat, int num_vec);
-    void Set_Data(const Array_of_H2O&);
-    void Draw() override;
-
-    void Set_Shader() override;
-    void Set_Uniforms() override;
-    void Set_Uniforms(Light_Src& src) override;
-};
-
-
-
-class Sim_Box_Mesh : public Mesh{
-private:
-    VertexArray m_VAO;
-    IndexBuffer m_IBO;
-    const std::string shader_file = "./Shaders/vector.vs";
-    Shader m_sh;
-    
-    
-    unsigned int m_pos_vbo;
-    AMD::Vec3 m_pos[8];
-    unsigned int indices[24] = {0,1, 1,2, 3,2, 3,0, 0,4, 1,5, 2,6, 3,7, 4,5, 5,6, 7,6, 7,4};
-public:
-    
-    Sim_Box_Mesh();
-    ~Sim_Box_Mesh();
-    void Set_Data();
-    void Draw() override;
-
-    void Set_Shader() override;
-    void Set_Uniforms() override;
-    void Set_Uniforms(Light_Src& src) override;
-};
-
 
 
 
@@ -506,7 +505,7 @@ public:
 
 class Hist_2D_Bar_Mesh{
 private:
-    const std::string shader_file = "./Shaders/Bar_Hist.vs";
+    const std::string shader_file = "../Shaders/Bar_Hist.vs";
     VertexArray m_VAO;
     IndexBuffer m_IBO;
     Shader m_sh;

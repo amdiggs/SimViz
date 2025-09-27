@@ -1,10 +1,7 @@
+
 #SHADER VERTEX
 #version 330 core
 layout (location = 0) in vec3 v_pos;
-layout (location = 1) in vec4 v_color;
-layout (location = 2) in vec3 v_norm;
-layout (location = 3) in vec2 v_tex;
-layout (location = 4) in float v_layer;
 layout (location = 5) in vec3 v_offset;
 layout (location = 6) in vec3 v_rot;
 layout (location = 7) in float v_scale;
@@ -17,33 +14,13 @@ uniform mat4 u_MVP;
 uniform mat3 u_Normal;
 
 
-vec3 Rotate(vec3 ang, vec3 pos){
-    float a = ang.x;
-    float b = ang.y;
-    float c = ang.z;
-    
-    //float3 r0 = (float3)(cos(c)*cos(b),cos(c)*sin(b)*sin(a) - sin(c)*cos(a) , cos(c)*sin(b)*cos(a)+sin(c)*sin(a));
-    //float3 r1 = (float3)(sin(c)*cos(b), sin(c)*sin(b)*sin(a) + cos(c)*cos(a), sin(c)*sin(b)*cos(a)-cos(c)*sin(a));
-    //float3 r2 = (float3)(-sin(b), cos(b)*sin(a), cos(b)*cos(a));
-    
-    vec3 r0 = vec3(cos(b),sin(b)*sin(a), sin(b)*cos(a));
-    vec3 r1 = vec3(sin(c),cos(a), -sin(a));
-    vec3 r2 = vec3(-sin(b), cos(b)*sin(a), cos(b)*cos(a));
-    
-    float x = dot(r0,pos);
-    float y = dot(r1,pos);
-    float z = dot(r2,pos);
-    return vec3(x,y,z);
-}
-
-
 void main()
 {
 
-    vec3 new_pos = v_offset + v_scale*0.33*Rotate(v_rot,v_pos);
+    vec3 new_pos = v_offset + v_pos;
     gl_Position =  u_MVP * vec4(new_pos,1.0);
-    f_norm = u_Normal * Rotate(v_rot,v_norm);
-    f_color = v_color;
+    f_norm = u_Normal * v_pos;
+    f_color = vec4(1.0,0.0,1.0,1.0);
     f_pos =  u_MVP * vec4(new_pos,1.0);
 }
 #END
@@ -84,7 +61,7 @@ void main()
     float ma = f_color.a;
     float ff = Compute_Fog(f_pos);
     color = l_dot*f_color;
-    color = vec4(0.0,0.0,0.0,1.0);
+    color = vec4(1.0,0.0,1.0,1.0);
     color.a = 1.0;
 }
 

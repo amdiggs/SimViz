@@ -6,6 +6,7 @@
 //
 
 #include "Shapes.hpp"
+#include "AMDmath.hpp"
 #include "Texture.hpp"
 //#include "Logging.h"
 using namespace AMD;
@@ -130,11 +131,13 @@ AMD::Vec3& Triangle::operator[](const int idx){
 
 
 Circle::Circle(float ex_rad)
-:rad(ex_rad)
-{}
-
-Circle::~Circle(){
+:rad(ex_rad){
+    Gen_points();
+    Gen_indices();
+    AMD::Compute_norms(verts, indices, m_num_idx);
 }
+
+Circle::~Circle(){}
 
 void Circle::Gen_points(){
     float theta = 0.0;
@@ -168,22 +171,20 @@ void Circle::Gen_indices(){
             count +=3;
             
             }
-        
-        
         else{
             indices[count] = 0;
             indices[count + 1] = i;
             indices[count + 2] = i - m_num_verts;
             count +=3;
-
         }
+    }
+    m_num_idx = count;
 }
-    return;
-}
 
 
 
-
+int Circle::num_idx(){return m_num_idx;}
+int Circle::num_verts(){return m_num_verts;}
 
 
 Cube::Cube()
@@ -1018,12 +1019,11 @@ int Sphere_Basic::num_verts() const {return m_num_verts;}
 
 //======================================================
 Cylinder::Cylinder()
-:m_len(3.0), m_rad(0.5), m_dz(0.1)
+:m_len(3.0), m_rad(0.33), m_dz(0.1)
 {
     Gen_points();
     Gen_indices();
     AMD::Compute_norms(verts, indices, m_num_idx);
-    
 }
 
 Cylinder::Cylinder(float e_len)
@@ -1031,7 +1031,7 @@ Cylinder::Cylinder(float e_len)
 {
     Gen_points();
     Gen_indices();
-    
+    AMD::Compute_norms(verts, indices, m_num_idx);
 }
 
 Cylinder::~Cylinder() {}
@@ -1056,6 +1056,7 @@ void Cylinder::Gen_points() {
         }
         z+=m_dz;
     }
+    max_z = z;
     m_num_verts = count;
 }
 
@@ -1092,7 +1093,8 @@ void Cylinder::Gen_indices() {
 }
 
 
-
+int Cylinder::num_idx() const {return m_num_idx;}
+int Cylinder::num_verts() const {return m_num_verts;}
 
 void Cylinder2::Gen_points() {
     float x, y, theta;
@@ -1197,14 +1199,15 @@ Cone::~Cone() {}
 
 
 void Cone::Gen_points() {
-    float r = m_rlo; float _z = m_zlo;
-    float dz = (m_zhi - m_zlo);
+    float dr = (m_rhi - m_rlo)/m_num_z; 
+    float r = m_rlo;
+    float _z = m_zlo;
+    float dz = (m_zhi - m_zlo)/m_num_z;
     float theta = 0.;
     int count = 0;
     float _x, _y;
     for (int i =0; i < m_num_z; i++){
         theta = 0.0;
-        r = 1.0 - _z;
         for (int j = 0; j < m_num_theta; j++) {
             _x = r*cos(theta);
             _y = r* sin(theta);
@@ -1214,8 +1217,9 @@ void Cone::Gen_points() {
             count ++;
         }
         _z+=dz;
+        r+=dr;
     }
-    verts[count].pos = Vec3(0.0, 0.0, 1.0);
+    verts[count].pos = Vec3(0.0, 0.0, m_zhi);
     verts[count].clr = Vec4(0.0,0.0,1.0,1.0);
     m_num_verts = count + 1;
 }
@@ -1281,6 +1285,8 @@ void Cone::Gen_indices() {
 }
 
 
+int Cone::num_idx() const {return m_num_idx;}
+int Cone::num_verts() const {return m_num_verts;}
 
 
 Arrow::Arrow()
@@ -1289,129 +1295,9 @@ Arrow::Arrow()
     Gen_points();
     Gen_indices();
     AMD::Compute_norms(this->verts, this->indices, m_num_idx);
-    //Coordinate_Transform();
 }
 
 
-
-
-Arrow::Arrow(char color)
-:m_num_z(20){
-    switch (color) {
-        case 'r':
-            m_color = Vec4(1.0,0.0,0.0,1.0);
-            break;
-        case 'g':
-            m_color = Vec4(0.0,1.0,0.0,1.0);
-            break;
-            
-        case 'b':
-            m_color = Vec4(0.0,0.0,1.0,1.0);
-            break;
-            
-        default:
-            break;
-    }
-    
-    Gen_points();
-    Gen_indices();
-    AMD::Compute_norms(this->verts, this->indices, m_num_idx);
-    //Coordinate_Transform();
-}
-
-Arrow::Arrow(char color, char dir)
-: m_length(3.0), m_num_z(30){
-    switch (color) {
-        case 'r':
-            m_color = Vec4(1.0,0.0,0.0,1.0);
-            break;
-        case 'g':
-            m_color = Vec4(0.0,1.0,0.0,1.0);
-            break;
-            
-        case 'b':
-            m_color = Vec4(0.0,0.0,1.0,1.0);
-            break;
-            
-        default:
-            break;
-    }
-    
-    switch (dir) {
-        case 'x':
-            r_mat = ROTATION_MATRIX(AMD::Vec3(0.0, halfPI, 0.0));
-            break;
-        
-        case 'y':
-            r_mat = ROTATION_MATRIX(AMD::Vec3(0.0, 0.0, -halfPI));
-            break;
-            
-        case 'z':
-            r_mat = ROTATION_MATRIX(AMD::Vec3(0.0, 0.0, 0.0));
-            break;
-        default:
-            break;
-    }
-    
-    
-    Gen_points();
-    Gen_indices();
-    Gen_Quad();
-    AMD::Compute_norms(this->verts, this->indices, m_num_idx);
-    Rotation();
-    Coordinate_Transform();
-}
-
-
-Arrow::Arrow(char color, char dir, float len)
-:m_length(len), m_num_z((int)(len/0.1))
-{
-    switch (color) {
-        case 'r':
-            m_color = Vec4(0.6,0.1,0.9,1.0);
-            break;
-        case 'g':
-            m_color = Vec4(0.0,1.0,0.0,1.0);
-            break;
-            
-        case 'b':
-            m_color = Vec4(0.0,0.0,1.0,1.0);
-            break;
-            
-        default:
-            break;
-    }
-    
-    switch (dir) {
-        case 'x':
-            r_mat = ROTATION_MATRIX(AMD::Vec3(0.0, halfPI, 0.0));
-            label_rot_mat = ROTATION_MATRIX(Vec3(0.0, halfPI, 0.0));
-            text_id =2.0;
-            break;
-        
-        case 'y':
-            r_mat = ROTATION_MATRIX(AMD::Vec3(0.0, 0.0, -halfPI));
-            label_rot_mat = ROTATION_MATRIX(Vec3(0.0, halfPI,halfPI));
-            text_id =3.0;
-            break;
-            
-        case 'z':
-            r_mat = ROTATION_MATRIX(AMD::Vec3(0.0, 0.0, 0.0));
-            label_rot_mat = ROTATION_MATRIX(Vec3(0.0, halfPI, 0.0));
-            text_id =4.0;
-            break;
-        default:
-            break;
-    }
-    
-    
-    Gen_points();
-    Gen_indices();
-    Gen_Quad();
-    AMD::Compute_norms(this->verts, this->indices, m_num_idx);
-    Rotation();
-    Coordinate_Transform();
-}
 
 Arrow::~Arrow() {}
 
@@ -1421,15 +1307,16 @@ Arrow::~Arrow() {}
 void Arrow::Gen_points() {
     int count = 0;
     Cylinder cyl;
+    float z_offset = cyl.max_z;
     Circle cir(1.0);
-    Cone con(3.0,4.0,1.0,0.0);
+    Cone con(1.5,2.5,1.0,0.0);
     for(int i = 0; i<cyl.num_verts(); i++){
         verts[count] = cyl.verts[i];
         count ++;
     }
     for(int i = 0; i<cir.num_verts(); i++){
         verts[count] = cir.verts[i];
-        verts[count].pos.z +=3.0;
+        verts[count].pos.z +=1.5;
         count ++;
     }
     for(int i = 0; i<con.num_verts(); i++){
@@ -1437,6 +1324,8 @@ void Arrow::Gen_points() {
         count ++;
     }
     m_num_verts = count;
+printf("num_verts = %d\n", m_num_verts);
+    
 }
 
 void Arrow::Gen_indices() {
@@ -1444,24 +1333,31 @@ void Arrow::Gen_indices() {
     Cylinder cyl;
     Circle cir(1.0);
     Cone con(3.0,4.0,1.0,0.0);
+    int offset = 0;
     for(int i = 0; i<cyl.num_idx(); i++){
         indices[count] = cyl.indices[i];
         count ++;
     }
+    offset = cyl.num_verts();
     for(int i = 0; i<cir.num_idx(); i++){
-        indices[count] = cir.indices[i];
+        indices[count] = cir.indices[i] + offset;
         count ++;
     }
-    for(int i = 0; i<con.num_verts(); i++){
-        indices[count] = con.indices[i];
+    offset += cir.num_verts();
+    for(int i = 0; i<con.num_idx(); i++){
+        indices[count] = con.indices[i] + offset;
         count ++;
     }
     m_num_idx = count;
+    offset = con.num_idx() + cyl.num_idx() + cir.num_idx();
+printf("num_idx = %d\n", m_num_idx);
+printf("off = %d\n", offset);
+printf("%d %d %d\n", con.num_idx(), cyl.num_idx(), cir.num_idx());
 }
 
 
 
-
+/*
 void Arrow::Coordinate_Transform(){
     for (int i = 0 ; i< m_num_verts; i++){
         verts[i].pos = CT * verts[i].pos;
@@ -1500,7 +1396,9 @@ void Arrow::Gen_Quad(){
     
 }
 
-
+*/
+int Arrow::num_idx() const {return m_num_idx;}
+int Arrow::num_verts() const {return m_num_verts;}
 //###########END of SHAPES#############################################
 
 

@@ -961,16 +961,12 @@ void AMD::Compute_norms(Vertex_TX* verts,unsigned int* ints, int num){
         A = verts[b].pos - verts[a].pos;
         B = verts[c].pos - verts[a].pos;
         _norm = A.cross(B);
-        
         verts[a].norm+=_norm;
         verts[b].norm+=_norm;
         verts[c].norm+=_norm;
-        
-        verts[a].norm *= 1.0 / verts[a].norm.len();
-        verts[b].norm *= 1.0 / verts[b].norm.len();
-        verts[c].norm *= 1.0 / verts[c].norm.len();
-        
-        
+        if(verts[a].norm.len() >= 0.001){verts[a].norm *= 1.0 / verts[a].norm.len();}
+        if(verts[b].norm.len() >= 0.001){verts[b].norm *= 1.0 / verts[b].norm.len();}
+        if(verts[c].norm.len() >= 0.001){verts[c].norm *= 1.0 / verts[c].norm.len();}
     }
 }
 

@@ -83,8 +83,8 @@ void Renderer::Draw_Pass(){
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glfwGetFramebufferSize(m_Window, &Ww, &Wh);
     int dw = Ww - 2.0*ui->display_w;
-    int dh= 2.0*ui->display_h;
-    glViewport(ui->display_w,ui->display_w, dw, dh);
+    //int dh= 2.0*ui->display_h;
+    glViewport(ui->display_w,0, dw, Wh);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -289,12 +289,14 @@ void UI_Window::Simple_window(){
     ImGui::Text("display W = %d, display H = %d", display_w,display_h);
     //enum File_Type {lammps, qe, jdftx, ase};
     const char* fts[4] = {"LAMMPS/dump", "Quantum Espresso", "JDFTX", "ASE/XYZ"};
-    static char atom_file[128] = "";
+    static char atom_file[128] = "../Other/meta.dump";
     ImGui::Text("File: %s", atom_file);
+    static bool loaded = false;
+    if(!loaded){
     ImGui::SameLine();
-
     if (ImGui::Button("Open"))
         ImGui::OpenPopup("open");
+    }
     static int selected = -1;
 
     // Always center this window when appearing
@@ -313,6 +315,7 @@ void UI_Window::Simple_window(){
                     ft = true;
                 }
             }
+            if(ft){ImGui::SetNextItemOpen(false);}
             ImGui::TreePop();
         }
         if (ImGui::Button("Open", ImVec2(120, 0))) { 
@@ -324,6 +327,7 @@ void UI_Window::Simple_window(){
                 err=true;}
             else{
                 Sim->Init(atom_file, selected);
+                loaded = true;
             }
             ImGui::CloseCurrentPopup();
         }
@@ -464,17 +468,19 @@ void UI_Window::Simple_window(){
     //op.m_Cam.Look_At(AMD::Vec3(0.0,0.0,10.0));
 
     static bool atoms = false;
-    static bool iso = false;
+    //static bool iso = false;
     static bool rho = false;
     static bool wire = false;
     static bool vox = false;
+    static bool vector_field = false;
+
     if (ImGui::CollapsingHeader("Draw Call/ Computes", ImGuiTreeNodeFlags_None)){
     if(ImGui::Checkbox("Draw Atoms", &atoms)){
         if(atoms){rend->Push_Call(0);}
         else{rend->Pop_Call(0);}
     }
-    if(ImGui::Checkbox("Draw Iso-Surface", &iso)){
-        if(iso){rend->Push_Call(1);}
+    if(ImGui::Checkbox("Draw Dipole", &vector_field)){
+        if(vector_field){rend->Push_Call(1);}
         else{rend->Pop_Call(1);}
     }
     if(ImGui::Checkbox("Draw Density", &rho)){

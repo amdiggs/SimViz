@@ -120,6 +120,7 @@ public:
     void Push_Atom(Atom* at);
     Atom** Get_Atoms();
     Dipole Comp_Dipole();
+    void Clear();
 
 };
 

@@ -19,8 +19,8 @@
 
 
 
-#define MAX_VERTS 10000
-#define MAX_IDX 50000
+#define MAX_VERTS 5000
+#define MAX_IDX 15000
 
 
 
@@ -50,17 +50,23 @@ public:
 
 
 
-class Circle: public SHAPE{
+class Circle{
 private:
     float rad;
-    void Gen_points() override;
-    void Gen_indices() override;
+    int m_num_verts = 0;
+    int m_num_idx = 0;
+    const int m_num_theta = 20;
+    const float m_dth = twoPI/m_num_theta;
+    void Gen_points();
+    void Gen_indices();
 public:
     Circle(float ex_rad);
     ~Circle();
     
-
-    
+    AMD::Vertex_TX verts[MAX_VERTS];
+    unsigned int indices[MAX_IDX];
+    int num_idx();
+    int num_verts();
 };
 
 class Triangle{
@@ -298,6 +304,7 @@ public:
     ~Cylinder();
     int num_idx() const ;
     int num_verts() const;
+    float max_z = 0;
 };
 
 
@@ -351,20 +358,11 @@ private:
     int m_num_z;
     float text_id;
     AMD::Vec4 m_color;
-    AMD::Mat4 r_mat;
-    AMD::Mat4 label_rot_mat;
-    AMD::Vec3 delta;
     void Gen_points();
     void Gen_indices();
-    void Gen_Quad();
-    void Coordinate_Transform();
-    void Rotation();
     
 public:
     Arrow();
-    Arrow(char color);
-    Arrow(char color, char dir);
-    Arrow(char color, char dir, float len);
     ~Arrow();
     AMD::Vertex_TX verts[MAX_VERTS];
     unsigned int indices[MAX_IDX];

@@ -306,6 +306,12 @@ Dipole Molecule::Comp_Dipole(){
     return m_dp;
 }
 
+
+void Molecule::Clear(){
+    m_num_ats = 0;
+}
+
+
 bool H2O_Check(Atom& at, Atom** others){
     int num_H = 0;
     Atom** nebs = at.Get_Neighbors();
@@ -320,8 +326,8 @@ bool H2O_Check(Atom& at, Atom** others){
     return (num_H >= 2);
 }
 
-Array_of_H2O::Array_of_H2O(){molecs = (Molecule*)malloc(sizeof(Molecule));}
-Array_of_H2O::~Array_of_H2O(){free(molecs);}
+Array_of_H2O::Array_of_H2O(){molecs = new Molecule[500];}
+Array_of_H2O::~Array_of_H2O(){delete[] molecs;}
 
 
 
@@ -332,7 +338,7 @@ void Array_of_H2O::Comp_H2O(){
     Atom** nebs = (Atom**)malloc(5*sizeof(Atom*));
     for(int i = 0; i<num_ats; i++){
         if(H2O_Check(ats[i], nebs)){
-            molecs = (Molecule*)realloc(molecs,(count + 1)*sizeof(Molecule));
+            molecs[count].Clear();
             molecs[count].Push_Atom(&(ats[i]));
             molecs[count].Push_Atom(nebs[0]);
             molecs[count].Push_Atom(nebs[1]);

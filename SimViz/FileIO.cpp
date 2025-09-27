@@ -365,7 +365,7 @@ void Dump::Set_Lattice(std::ifstream& file_stream, size_t &pos){
         }
     }
     Scale = this->m_lattice;
-    Scale.print();
+    //Scale.print();
     pos = file_stream.tellg();
 }
 
@@ -521,9 +521,7 @@ void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
         } // end of atom line else if
       
     }// end of while loop
-    
     init = true;
-    
 }
 
 Dump_Arr::Dump_Arr(){}
