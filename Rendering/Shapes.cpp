@@ -288,304 +288,6 @@ int Cube::num_verts(){
     return m_num_verts;
 }
 
-//################################################################################################
-
-Environment_Cube::Environment_Cube()
-{
-    Gen_Points();
-    AMD::Compute_norms(verts, indices, m_num_idx);
-}
-
-Environment_Cube::~Environment_Cube(){}
-
-
-void Environment_Cube::Gen_Points(){
-    float c = 0.99; float zb = -2.99; float zf = 0.99;
-    
-    verts[0].pos = Vec3(-c,-c,zb);
-    verts[1].pos = Vec3(c, -c, zb);
-    verts[2].pos = Vec3(c, c, zb);
-    verts[3].pos = Vec3(-c, c, zb);
-    
-    verts[0].texture[0] = 0.0; verts[0].texture[1] = 0.0;
-    verts[1].texture[0] = 1.0; verts[1].texture[1] = 0.0;
-    verts[2].texture[0] = 1.0; verts[2].texture[1] =1.0;
-    verts[3].texture[0] = 0.0; verts[3].texture[1] = 1.0;
-    //
-    verts[0].tex_indx = 0.0;
-    verts[1].tex_indx = 0.0;
-    verts[2].tex_indx = 0.0;
-    verts[3].tex_indx = 0.0;
-    //
-    verts[4].pos = Vec3(c,-c, zb);
-    verts[5].pos = Vec3(c, -c, c);
-    verts[6].pos = Vec3(c, c,  c);
-    verts[7].pos = Vec3(c, c, zb);
-    
-    
-    verts[4].texture[0] = 0.0; verts[4].texture[1] = 0.0;
-    verts[5].texture[0] = 1.0; verts[5].texture[1] = 0.0;
-    verts[6].texture[0] = 1.0; verts[6].texture[1] = 1.0;
-    verts[7].texture[0] = 0.0; verts[7].texture[1] = 1.0;
-    
-    verts[4].tex_indx = 1.0;
-    verts[5].tex_indx = 1.0;
-    verts[6].tex_indx = 1.0;
-    verts[7].tex_indx = 1.0;
-    //###############################################################
-    verts[8 ].pos = Vec3(c,-c, c);
-    verts[9 ].pos = Vec3(-c, -c, c);
-    verts[10].pos = Vec3(-c, c,  c);
-    verts[11].pos = Vec3(c, c, c);
-    
-    
-    verts[8 ].texture[0] = 0.0; verts[4].texture[1] = 0.0;
-    verts[9 ].texture[0] = 1.0; verts[5].texture[1] = 0.0;
-    verts[10].texture[0] = 1.0; verts[6].texture[1] = 1.0;
-    verts[11].texture[0] = 0.0; verts[7].texture[1] = 1.0;
-    
-    verts[8 ].tex_indx = 2.0;
-    verts[9 ].tex_indx = 2.0;
-    verts[10].tex_indx = 2.0;
-    verts[11].tex_indx = 2.0;
-    
-    
-    //###############################################################
-    verts[12].pos = Vec3(-c,-c, c);
-    verts[13].pos = Vec3(-c, -c, zb);
-    verts[14].pos = Vec3(-c, c,  zb);
-    verts[15].pos = Vec3(-c, c, c);
-    
-    
-    verts[12].texture[0] = 0.0; verts[4].texture[1] = 0.0;
-    verts[13].texture[0] = 1.0; verts[5].texture[1] = 0.0;
-    verts[14].texture[0] = 1.0; verts[6].texture[1] = 1.0;
-    verts[15].texture[0] = 0.0; verts[7].texture[1] = 1.0;
-    
-    verts[12].tex_indx = 3.0;
-    verts[13].tex_indx = 3.0;
-    verts[14].tex_indx = 3.0;
-    verts[15].tex_indx = 3.0;
-    
-    
-    
-    //###############################################################
-    verts[16].pos = Vec3(-c,-c, c);
-    verts[17].pos = Vec3(c, -c, c);
-    verts[18].pos = Vec3(c, -c,  zb);
-    verts[19].pos = Vec3(-c, -c, zb);
-    
-    
-    verts[16].texture[0] = 0.0; verts[4].texture[1] = 0.0;
-    verts[17].texture[0] = 1.0; verts[5].texture[1] = 0.0;
-    verts[18].texture[0] = 1.0; verts[6].texture[1] = 1.0;
-    verts[19].texture[0] = 0.0; verts[7].texture[1] = 1.0;
-    
-    verts[16].tex_indx = 4.0;
-    verts[17].tex_indx = 4.0;
-    verts[18].tex_indx = 4.0;
-    verts[19].tex_indx = 4.0;
-    
-    //###############################################################
-    verts[20].pos = Vec3(-c,c, zb);
-    verts[21].pos = Vec3(c, c, zb);
-    verts[22].pos = Vec3(c, c,  c);
-    verts[23].pos = Vec3(-c, c, c);
-    
-    
-    verts[20].texture[0] = 0.0; verts[4].texture[1] = 0.0;
-    verts[21].texture[0] = 1.0; verts[5].texture[1] = 0.0;
-    verts[22].texture[0] = 1.0; verts[6].texture[1] = 1.0;
-    verts[23].texture[0] = 0.0; verts[7].texture[1] = 1.0;
-    
-    verts[20].tex_indx = 5.0;
-    verts[21].tex_indx = 5.0;
-    verts[22].tex_indx = 5.0;
-    verts[23].tex_indx = 5.0;
-    
-    int count = 0;
-    for (int i = 0; i<m_num_verts; i+=4){
-        verts[i + 0].clr = Vec4(0.6, 0.2, 0.4, 1.0);
-        verts[i + 1].clr = Vec4(0.6, 0.2, 0.4, 1.0);
-        verts[i + 2].clr = Vec4(0.6, 0.2, 0.4, 1.0);
-        verts[i + 3].clr = Vec4(0.6, 0.2, 0.4, 1.0);
-        indices[count + 0] = i;
-        indices[count + 1] = i + 1;
-        indices[count + 2] = i + 2;
-        
-        indices[count + 3] = i + 3;
-        indices[count + 4] = i + 2;
-        indices[count + 5] = i;
-        
-        count+=6;
-        
-    }
-
-}
-
-//========Volume class for drawing volume data===================================
-Volume_XY::Volume_XY(AMD::Vec3 dim, int num_slices)
-:m_dimensions(dim), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
-{
-    Gen_Verts(num_slices);
-    AMD::Compute_norms(verts, indices, m_num_idx);
-}
-
-Volume_XY::Volume_XY(float w, float h, float d, int num_slices)
-:m_dimensions(w,h,d), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
-{
-    Gen_Verts(num_slices);
-    AMD::Compute_norms(verts, indices, m_num_idx);
-}
-
-
-
-Volume_XY::~Volume_XY(){}
-
-void Volume_XY::Gen_Verts(int num_slices){
-    float dz = m_dimensions.z / (float)num_slices;
-    float x = m_dimensions.x/2.0;
-    float y = m_dimensions.y/2.0;
-    float z = m_dimensions.z / 2.0;
-    unsigned int count = 0;
-    float tz = 0.0;
-    float dtz = dz/m_dimensions.z;
-    for (int i = 0; i< num_slices; i++){
-        verts[count + 0].pos = Vec3(-x,-y, z);
-        verts[count + 1].pos = Vec3(x,-y, z);
-        verts[count + 2].pos = Vec3(x, y, z);
-        verts[count + 3].pos = Vec3(-x,y, z);
-        
-        
-        verts[count + 0].clr = Vec4(0.3,0.0,0.8,1.0);
-        verts[count + 1].clr = Vec4(0.3,0.0,0.8,1.0);
-        verts[count + 2].clr = Vec4(0.3,0.0,0.8,1.0);
-        verts[count + 3].clr = Vec4(0.3,0.0,0.8,1.0);
-        
-        verts[count + 0].texture = Vec2(0.0,0.0);
-        verts[count + 1].texture = Vec2(1.0,0.0);
-        verts[count + 2].texture = Vec2(1.0,1.0);
-        verts[count + 3].texture = Vec2(0.0,1.0);
-        
-        
-        verts[count + 0].tex_indx = tz;
-        verts[count + 1].tex_indx = tz;
-        verts[count + 2].tex_indx = tz;
-        verts[count + 3].tex_indx = tz;
-        
-        count += 4;
-        z -= dz;
-        tz += dtz;
-    }
-    
-    count = 0;
-    int v_num = 0;
-    for (int i = 0; i<num_slices; i++){
-        
-        indices[count + 0] = v_num + 0;
-        indices[count + 1] = v_num + 1;
-        indices[count + 2] = v_num + 2;
-        indices[count + 3] = v_num + 2;
-        indices[count + 4] = v_num + 3;
-        indices[count + 5] = v_num + 0;
-        count += 6;
-        v_num+=4;
-        
-    }
-    
-}
-
-int Volume_XY::num_idx(){
-    return m_num_idx;
-}
-
-int Volume_XY::num_verts(){
-    return m_num_verts;
-}
-
-
-
-//========Volume class for drawing volume data===================================
-Volume_XZ::Volume_XZ(AMD::Vec3 dim, int num_slices)
-:m_dimensions(dim), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
-{
-    Gen_Verts(num_slices);
-    AMD::Compute_norms(verts, indices, m_num_idx);
-}
-
-Volume_XZ::Volume_XZ(float w, float h, float d, int num_slices)
-:m_dimensions(w,h,d), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
-{
-    Gen_Verts(num_slices);
-    AMD::Compute_norms(verts, indices, m_num_idx);
-}
-
-
-
-Volume_XZ::~Volume_XZ(){}
-
-void Volume_XZ::Gen_Verts(int num_slices){
-    float dy = m_dimensions.y / (float)num_slices;
-    float x = m_dimensions.x/2.0;
-    float y = -m_dimensions.y/2.0;
-    float z = m_dimensions.z / 2.0;
-    unsigned int count = 0;
-    float ty = 0.0;
-    float dty = dy/m_dimensions.y;
-    for (int i = 0; i< num_slices; i++){
-        verts[count + 0].pos = Vec3(-x, y, -z);
-        verts[count + 1].pos = Vec3(x, y, -z);
-        verts[count + 2].pos = Vec3(x, y, z);
-        verts[count + 3].pos = Vec3(-x, y, z);
-        
-        
-        verts[count + 0].clr = Vec4(0.3,0.0,0.8,1.0);
-        verts[count + 1].clr = Vec4(0.3,0.0,0.8,1.0);
-        verts[count + 2].clr = Vec4(0.3,0.0,0.8,1.0);
-        verts[count + 3].clr = Vec4(0.3,0.0,0.8,1.0);
-        
-        verts[count + 0].texture = Vec2(0.0,0.0);
-        verts[count + 1].texture = Vec2(1.0,0.0);
-        verts[count + 2].texture = Vec2(1.0,1.0);
-        verts[count + 3].texture = Vec2(0.0,1.0);
-        
-        
-        verts[count + 0].tex_indx = ty;
-        verts[count + 1].tex_indx = ty;
-        verts[count + 2].tex_indx = ty;
-        verts[count + 3].tex_indx = ty;
-        
-        count += 4;
-        y += dy;
-        ty += dty;
-    }
-    
-    count = 0;
-    int v_num = 0;
-    for (int i = 0; i<num_slices; i++){
-        
-        indices[count + 0] = v_num + 0;
-        indices[count + 1] = v_num + 1;
-        indices[count + 2] = v_num + 2;
-        indices[count + 3] = v_num + 2;
-        indices[count + 4] = v_num + 3;
-        indices[count + 5] = v_num + 0;
-        count += 6;
-        v_num+=4;
-        
-    }
-    
-}
-
-int Volume_XZ::num_idx(){
-    return m_num_idx;
-}
-
-int Volume_XZ::num_verts(){
-    return m_num_verts;
-}
-
-
 
 
 
@@ -1041,7 +743,7 @@ Cylinder::~Cylinder() {}
 void Cylinder::Gen_points() {
     int num_z = (int)(m_len/m_dz);
     float x, y, theta;
-    float z = -0.5*m_len;
+    float z = 0.0;
     int count = 0;
     for (int i = 0; i<= num_z; i++){
         theta = 0.0;
@@ -1095,84 +797,6 @@ void Cylinder::Gen_indices() {
 
 int Cylinder::num_idx() const {return m_num_idx;}
 int Cylinder::num_verts() const {return m_num_verts;}
-
-void Cylinder2::Gen_points() {
-    float x, y, theta;
-    double z[2] = {-0.5*m_len ,0.5*m_len};
-    int count = 0;
-    for (int i = 0; i< 2; i++){
-        theta = 0.0;
-        for (int j = 0; j< m_num_theta; j++) {
-            x = m_rad*cos(theta);
-            y = m_rad*sin(theta);
-            verts[count].pos = Vec3(x,y,z[i]);
-            verts[count].clr = Vec4(0.0,0.0,1.0,1.0);
-            verts[count].texture[0] = theta; verts[count].texture[1] = float(i);
-            verts[count].tex_indx = 0.0;
-            theta +=m_dth;
-            count++;
-        }
-    }
-    m_num_verts = count;
-}
-
-void Cylinder2::Gen_indices() {
-    for (int i = 0; i< m_num_theta; i++){
-        if((i+1) % m_num_theta){
-            indices[m_num_idx] = i;
-            indices[m_num_idx + 1] = i + 1;
-            indices[m_num_idx + 2] = i + 1 + m_num_theta;
-            
-            
-            indices[m_num_idx + 3] = i;
-            indices[m_num_idx + 4] = i + m_num_theta +1;
-            indices[m_num_idx + 5] = i + m_num_theta ;
-            m_num_idx +=6;
-            
-            
-            
-        }
-        
-        
-        else{
-            indices[m_num_idx] = i;
-            indices[m_num_idx + 1] = i + 1 - m_num_theta;
-            indices[m_num_idx + 2] = i + 1;
-            
-            
-            indices[m_num_idx + 3] = i;
-            indices[m_num_idx + 4] = i + 1;
-            indices[m_num_idx + 5] = i + m_num_theta;
-            m_num_idx +=6;
-
-        }
-    }
-}
-
-Cylinder2::Cylinder2(float e_len)
-:m_len(e_len), m_rad(0.5){
-    Gen_points();
-    Gen_indices();
-    AMD::Compute_norms(verts, indices, m_num_idx);
-}
-
-Cylinder2::Cylinder2()
-:m_len(3.0), m_rad(0.5)
-{
-    Gen_points();
-    Gen_indices();
-    AMD::Compute_norms(verts, indices, m_num_idx);
-}
-
-Cylinder2::~Cylinder2() {}
-
-
-
-
-
-
-
-
 
 
 Cone::Cone()
@@ -1237,12 +861,7 @@ void Cone::Gen_indices() {
             indices[count + 4] = i + m_num_theta + 1;
             indices[count + 5] = i + m_num_theta ;
             count +=6;
-            
-            
-            
         }
-        
-        
         else{
             indices[count] = i;
             indices[count + 1] = i + 1 - m_num_theta;
@@ -1269,15 +888,12 @@ void Cone::Gen_indices() {
             
             }
         
-        
         else{
             indices[count] = i;
             indices[count + 1] = start;
             indices[count + 2] = m_num_verts - 1;
             count +=3;
-
         }
-        
         
     }
     
@@ -1309,14 +925,14 @@ void Arrow::Gen_points() {
     Cylinder cyl;
     float z_offset = cyl.max_z;
     Circle cir(1.0);
-    Cone con(1.5,2.5,1.0,0.0);
+    Cone con(z_offset,z_offset + 1.0,1.0,0.0);
     for(int i = 0; i<cyl.num_verts(); i++){
         verts[count] = cyl.verts[i];
         count ++;
     }
     for(int i = 0; i<cir.num_verts(); i++){
         verts[count] = cir.verts[i];
-        verts[count].pos.z +=1.5;
+        verts[count].pos.z +=z_offset;
         count ++;
     }
     for(int i = 0; i<con.num_verts(); i++){
@@ -1356,47 +972,6 @@ printf("%d %d %d\n", con.num_idx(), cyl.num_idx(), cir.num_idx());
 }
 
 
-
-/*
-void Arrow::Coordinate_Transform(){
-    for (int i = 0 ; i< m_num_verts; i++){
-        verts[i].pos = CT * verts[i].pos;
-        verts[i].norm = CT * verts[i].norm;
-    }
-}
-
-
-void Arrow::Rotation(){
-    for (int i = 0 ; i< m_num_verts; i++){
-        verts[i].pos = r_mat* verts[i].pos;
-        verts[i].norm = r_mat * verts[i].norm;
-    }
-}
-
-
-void Arrow::Gen_Quad(){
-    AMD::Vec4 delta(0.0, -0.6, 1.9,1.0);
-    AMD::Vec3 temp;
-    label_rot_mat.assign_row(3, delta);
-    Quad qd(1.0);
-    int off_set_verts = m_num_verts;
-    for (int i = 0; i<qd.num_verts(); i++){
-        qd.verts[i].pos = label_rot_mat*qd.verts[i].pos;
-        qd.verts[i].pos = qd.verts[i].pos*0.75;
-        verts[m_num_verts] = qd.verts[i];
-        verts[m_num_verts].clr = m_color;
-        verts[m_num_verts].tex_indx = text_id;
-        m_num_verts++;
-    }
-    
-    for (int j = 0; j < qd.num_idx(); j++){
-        indices[m_num_idx] = qd.indices[j] + off_set_verts;
-        m_num_idx++;
-    }
-    
-}
-
-*/
 int Arrow::num_idx() const {return m_num_idx;}
 int Arrow::num_verts() const {return m_num_verts;}
 //###########END of SHAPES#############################################
@@ -1535,6 +1110,382 @@ void Grid::Set_Height(float** arr, int nx, int nz){
     }
     
 }
+
+
+
+//################################################################################################
+
+Environment_Cube::Environment_Cube()
+{
+    Gen_Points();
+    AMD::Compute_norms(verts, indices, m_num_idx);
+}
+
+Environment_Cube::~Environment_Cube(){}
+
+
+void Environment_Cube::Gen_Points(){
+    float c = 0.99; float zb = -2.99; float zf = 0.99;
+    
+    verts[0].pos = Vec3(-c,-c,zb);
+    verts[1].pos = Vec3(c, -c, zb);
+    verts[2].pos = Vec3(c, c, zb);
+    verts[3].pos = Vec3(-c, c, zb);
+    
+    verts[0].texture[0] = 0.0; verts[0].texture[1] = 0.0;
+    verts[1].texture[0] = 1.0; verts[1].texture[1] = 0.0;
+    verts[2].texture[0] = 1.0; verts[2].texture[1] =1.0;
+    verts[3].texture[0] = 0.0; verts[3].texture[1] = 1.0;
+    //
+    verts[0].tex_indx = 0.0;
+    verts[1].tex_indx = 0.0;
+    verts[2].tex_indx = 0.0;
+    verts[3].tex_indx = 0.0;
+    //
+    verts[4].pos = Vec3(c,-c, zb);
+    verts[5].pos = Vec3(c, -c, c);
+    verts[6].pos = Vec3(c, c,  c);
+    verts[7].pos = Vec3(c, c, zb);
+    
+    
+    verts[4].texture[0] = 0.0; verts[4].texture[1] = 0.0;
+    verts[5].texture[0] = 1.0; verts[5].texture[1] = 0.0;
+    verts[6].texture[0] = 1.0; verts[6].texture[1] = 1.0;
+    verts[7].texture[0] = 0.0; verts[7].texture[1] = 1.0;
+    
+    verts[4].tex_indx = 1.0;
+    verts[5].tex_indx = 1.0;
+    verts[6].tex_indx = 1.0;
+    verts[7].tex_indx = 1.0;
+    //###############################################################
+    verts[8 ].pos = Vec3(c,-c, c);
+    verts[9 ].pos = Vec3(-c, -c, c);
+    verts[10].pos = Vec3(-c, c,  c);
+    verts[11].pos = Vec3(c, c, c);
+    
+    
+    verts[8 ].texture[0] = 0.0; verts[4].texture[1] = 0.0;
+    verts[9 ].texture[0] = 1.0; verts[5].texture[1] = 0.0;
+    verts[10].texture[0] = 1.0; verts[6].texture[1] = 1.0;
+    verts[11].texture[0] = 0.0; verts[7].texture[1] = 1.0;
+    
+    verts[8 ].tex_indx = 2.0;
+    verts[9 ].tex_indx = 2.0;
+    verts[10].tex_indx = 2.0;
+    verts[11].tex_indx = 2.0;
+    
+    
+    //###############################################################
+    verts[12].pos = Vec3(-c,-c, c);
+    verts[13].pos = Vec3(-c, -c, zb);
+    verts[14].pos = Vec3(-c, c,  zb);
+    verts[15].pos = Vec3(-c, c, c);
+    
+    
+    verts[12].texture[0] = 0.0; verts[4].texture[1] = 0.0;
+    verts[13].texture[0] = 1.0; verts[5].texture[1] = 0.0;
+    verts[14].texture[0] = 1.0; verts[6].texture[1] = 1.0;
+    verts[15].texture[0] = 0.0; verts[7].texture[1] = 1.0;
+    
+    verts[12].tex_indx = 3.0;
+    verts[13].tex_indx = 3.0;
+    verts[14].tex_indx = 3.0;
+    verts[15].tex_indx = 3.0;
+    
+    
+    
+    //###############################################################
+    verts[16].pos = Vec3(-c,-c, c);
+    verts[17].pos = Vec3(c, -c, c);
+    verts[18].pos = Vec3(c, -c,  zb);
+    verts[19].pos = Vec3(-c, -c, zb);
+    
+    
+    verts[16].texture[0] = 0.0; verts[4].texture[1] = 0.0;
+    verts[17].texture[0] = 1.0; verts[5].texture[1] = 0.0;
+    verts[18].texture[0] = 1.0; verts[6].texture[1] = 1.0;
+    verts[19].texture[0] = 0.0; verts[7].texture[1] = 1.0;
+    
+    verts[16].tex_indx = 4.0;
+    verts[17].tex_indx = 4.0;
+    verts[18].tex_indx = 4.0;
+    verts[19].tex_indx = 4.0;
+    
+    //###############################################################
+    verts[20].pos = Vec3(-c,c, zb);
+    verts[21].pos = Vec3(c, c, zb);
+    verts[22].pos = Vec3(c, c,  c);
+    verts[23].pos = Vec3(-c, c, c);
+    
+    
+    verts[20].texture[0] = 0.0; verts[4].texture[1] = 0.0;
+    verts[21].texture[0] = 1.0; verts[5].texture[1] = 0.0;
+    verts[22].texture[0] = 1.0; verts[6].texture[1] = 1.0;
+    verts[23].texture[0] = 0.0; verts[7].texture[1] = 1.0;
+    
+    verts[20].tex_indx = 5.0;
+    verts[21].tex_indx = 5.0;
+    verts[22].tex_indx = 5.0;
+    verts[23].tex_indx = 5.0;
+    
+    int count = 0;
+    for (int i = 0; i<m_num_verts; i+=4){
+        verts[i + 0].clr = Vec4(0.6, 0.2, 0.4, 1.0);
+        verts[i + 1].clr = Vec4(0.6, 0.2, 0.4, 1.0);
+        verts[i + 2].clr = Vec4(0.6, 0.2, 0.4, 1.0);
+        verts[i + 3].clr = Vec4(0.6, 0.2, 0.4, 1.0);
+        indices[count + 0] = i;
+        indices[count + 1] = i + 1;
+        indices[count + 2] = i + 2;
+        
+        indices[count + 3] = i + 3;
+        indices[count + 4] = i + 2;
+        indices[count + 5] = i;
+        
+        count+=6;
+        
+    }
+
+}
+
+//========Volume class for drawing volume data===================================
+Volume_XY::Volume_XY(AMD::Vec3 dim, int num_slices)
+:m_dimensions(dim), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
+{
+    Gen_Verts(num_slices);
+    AMD::Compute_norms(verts, indices, m_num_idx);
+}
+
+Volume_XY::Volume_XY(float w, float h, float d, int num_slices)
+:m_dimensions(w,h,d), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
+{
+    Gen_Verts(num_slices);
+    AMD::Compute_norms(verts, indices, m_num_idx);
+}
+
+
+
+Volume_XY::~Volume_XY(){}
+
+void Volume_XY::Gen_Verts(int num_slices){
+    float dz = m_dimensions.z / (float)num_slices;
+    float x = m_dimensions.x/2.0;
+    float y = m_dimensions.y/2.0;
+    float z = m_dimensions.z / 2.0;
+    unsigned int count = 0;
+    float tz = 0.0;
+    float dtz = dz/m_dimensions.z;
+    for (int i = 0; i< num_slices; i++){
+        verts[count + 0].pos = Vec3(-x,-y, z);
+        verts[count + 1].pos = Vec3(x,-y, z);
+        verts[count + 2].pos = Vec3(x, y, z);
+        verts[count + 3].pos = Vec3(-x,y, z);
+        
+        
+        verts[count + 0].clr = Vec4(0.3,0.0,0.8,1.0);
+        verts[count + 1].clr = Vec4(0.3,0.0,0.8,1.0);
+        verts[count + 2].clr = Vec4(0.3,0.0,0.8,1.0);
+        verts[count + 3].clr = Vec4(0.3,0.0,0.8,1.0);
+        
+        verts[count + 0].texture = Vec2(0.0,0.0);
+        verts[count + 1].texture = Vec2(1.0,0.0);
+        verts[count + 2].texture = Vec2(1.0,1.0);
+        verts[count + 3].texture = Vec2(0.0,1.0);
+        
+        
+        verts[count + 0].tex_indx = tz;
+        verts[count + 1].tex_indx = tz;
+        verts[count + 2].tex_indx = tz;
+        verts[count + 3].tex_indx = tz;
+        
+        count += 4;
+        z -= dz;
+        tz += dtz;
+    }
+    
+    count = 0;
+    int v_num = 0;
+    for (int i = 0; i<num_slices; i++){
+        
+        indices[count + 0] = v_num + 0;
+        indices[count + 1] = v_num + 1;
+        indices[count + 2] = v_num + 2;
+        indices[count + 3] = v_num + 2;
+        indices[count + 4] = v_num + 3;
+        indices[count + 5] = v_num + 0;
+        count += 6;
+        v_num+=4;
+        
+    }
+    
+}
+
+int Volume_XY::num_idx(){
+    return m_num_idx;
+}
+
+int Volume_XY::num_verts(){
+    return m_num_verts;
+}
+
+
+
+//========Volume class for drawing volume data===================================
+Volume_XZ::Volume_XZ(AMD::Vec3 dim, int num_slices)
+:m_dimensions(dim), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
+{
+    Gen_Verts(num_slices);
+    AMD::Compute_norms(verts, indices, m_num_idx);
+}
+
+Volume_XZ::Volume_XZ(float w, float h, float d, int num_slices)
+:m_dimensions(w,h,d), m_num_verts(4*num_slices), m_num_idx(6*num_slices)
+{
+    Gen_Verts(num_slices);
+    AMD::Compute_norms(verts, indices, m_num_idx);
+}
+
+
+
+Volume_XZ::~Volume_XZ(){}
+
+void Volume_XZ::Gen_Verts(int num_slices){
+    float dy = m_dimensions.y / (float)num_slices;
+    float x = m_dimensions.x/2.0;
+    float y = -m_dimensions.y/2.0;
+    float z = m_dimensions.z / 2.0;
+    unsigned int count = 0;
+    float ty = 0.0;
+    float dty = dy/m_dimensions.y;
+    for (int i = 0; i< num_slices; i++){
+        verts[count + 0].pos = Vec3(-x, y, -z);
+        verts[count + 1].pos = Vec3(x, y, -z);
+        verts[count + 2].pos = Vec3(x, y, z);
+        verts[count + 3].pos = Vec3(-x, y, z);
+        
+        
+        verts[count + 0].clr = Vec4(0.3,0.0,0.8,1.0);
+        verts[count + 1].clr = Vec4(0.3,0.0,0.8,1.0);
+        verts[count + 2].clr = Vec4(0.3,0.0,0.8,1.0);
+        verts[count + 3].clr = Vec4(0.3,0.0,0.8,1.0);
+        
+        verts[count + 0].texture = Vec2(0.0,0.0);
+        verts[count + 1].texture = Vec2(1.0,0.0);
+        verts[count + 2].texture = Vec2(1.0,1.0);
+        verts[count + 3].texture = Vec2(0.0,1.0);
+        
+        
+        verts[count + 0].tex_indx = ty;
+        verts[count + 1].tex_indx = ty;
+        verts[count + 2].tex_indx = ty;
+        verts[count + 3].tex_indx = ty;
+        
+        count += 4;
+        y += dy;
+        ty += dty;
+    }
+    
+    count = 0;
+    int v_num = 0;
+    for (int i = 0; i<num_slices; i++){
+        
+        indices[count + 0] = v_num + 0;
+        indices[count + 1] = v_num + 1;
+        indices[count + 2] = v_num + 2;
+        indices[count + 3] = v_num + 2;
+        indices[count + 4] = v_num + 3;
+        indices[count + 5] = v_num + 0;
+        count += 6;
+        v_num+=4;
+        
+    }
+    
+}
+
+int Volume_XZ::num_idx(){
+    return m_num_idx;
+}
+
+int Volume_XZ::num_verts(){
+    return m_num_verts;
+}
+
+
+
+
+void Cylinder2::Gen_points() {
+    float x, y, theta;
+    double z[2] = {-0.5*m_len ,0.5*m_len};
+    int count = 0;
+    for (int i = 0; i< 2; i++){
+        theta = 0.0;
+        for (int j = 0; j< m_num_theta; j++) {
+            x = m_rad*cos(theta);
+            y = m_rad*sin(theta);
+            verts[count].pos = Vec3(x,y,z[i]);
+            verts[count].clr = Vec4(0.0,0.0,1.0,1.0);
+            verts[count].texture[0] = theta; verts[count].texture[1] = float(i);
+            verts[count].tex_indx = 0.0;
+            theta +=m_dth;
+            count++;
+        }
+    }
+    m_num_verts = count;
+}
+
+void Cylinder2::Gen_indices() {
+    for (int i = 0; i< m_num_theta; i++){
+        if((i+1) % m_num_theta){
+            indices[m_num_idx] = i;
+            indices[m_num_idx + 1] = i + 1;
+            indices[m_num_idx + 2] = i + 1 + m_num_theta;
+            
+            
+            indices[m_num_idx + 3] = i;
+            indices[m_num_idx + 4] = i + m_num_theta +1;
+            indices[m_num_idx + 5] = i + m_num_theta ;
+            m_num_idx +=6;
+            
+            
+            
+        }
+        
+        
+        else{
+            indices[m_num_idx] = i;
+            indices[m_num_idx + 1] = i + 1 - m_num_theta;
+            indices[m_num_idx + 2] = i + 1;
+            
+            
+            indices[m_num_idx + 3] = i;
+            indices[m_num_idx + 4] = i + 1;
+            indices[m_num_idx + 5] = i + m_num_theta;
+            m_num_idx +=6;
+
+        }
+    }
+}
+
+Cylinder2::Cylinder2(float e_len)
+:m_len(e_len), m_rad(0.5){
+    Gen_points();
+    Gen_indices();
+    AMD::Compute_norms(verts, indices, m_num_idx);
+}
+
+Cylinder2::Cylinder2()
+:m_len(3.0), m_rad(0.5)
+{
+    Gen_points();
+    Gen_indices();
+    AMD::Compute_norms(verts, indices, m_num_idx);
+}
+
+Cylinder2::~Cylinder2() {}
+
+
+
+
 
 
 

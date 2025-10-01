@@ -80,14 +80,17 @@ public:
 class Bond_Mesh: public Mesh{
 private:
     VertexArray m_VAO;
+    IndexBuffer m_IBO;
     const std::string shader_file = "../Shaders/Bond.vs";
-    int m_num_verts;
+    int m_num;
     Shader m_sh;
     
-    
-    unsigned int m_vert_vbo;
-    AMD::Vec3* m_verts = NULL;
+    unsigned int m_pos_vbo,m_rot_vbo, m_scale_vbo;
+    AMD::Vec3* m_pos = NULL;
+    AMD::Vec3* m_rot = NULL;
+    float* m_scale = NULL;
     bool init = false;
+    
 public:
     
     Bond_Mesh();

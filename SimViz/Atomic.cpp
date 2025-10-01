@@ -30,6 +30,19 @@ float Boundary_Wrapped_Dist(AMD::Vec3 A, AMD::Vec3 B){
     return sqrt(dist_sq);
 }
 
+AMD::Vec3 Boundary_Wrapped_Diff(AMD::Vec3 A, AMD::Vec3 B){
+    AMD::Vec3 box = Sim->Sim_Box();
+    AMD::Vec3 ret;
+    for (int i = 0; i< 3; i++){
+        float delta = abs(A[i]-B[i]);
+        if(delta > 0.5*box[i]){
+            ret[i] = (A[i] < B[i]) ? A[i] + box[i] - B[i] : A[i] - box[i] - B[i];
+        }
+        else{ret[i] = A[i] - B[i];}
+    }
+    
+    return ret;
+}
 float Dist(AMD::Vec3 A, AMD::Vec3 B){
     float dx = A.x - B.x;
     float dy = A.y - B.y;
@@ -44,15 +57,15 @@ float Comp_Bond_Length(Atom& A, Atom& B){
     atom_info ib = Get_Atom_Info(B.Get_Type());
     float ra = ia.rad;
     float rb = ib.rad;
-    return 1.25*(ra + rb);
+    return 1.33*(ra + rb);
 }
 
 Atom::Atom()
-: m_id(10000000), m_type(0), m_coords(0.0,0.0,0.0), m_num_neighbors(0)
+: m_id(10000000), m_type(0), m_coords(0.0,0.0,0.0), m_num_neighbors(0), draw(true)
 {}
 
 Atom::Atom(Atom_Line al)
-: m_num_neighbors(0)
+: m_num_neighbors(0), draw(true)
 {
     m_id = al.id;
     m_type = al.type;
@@ -178,8 +191,11 @@ void Atom::Shift(){
         m_coords.z += (1.0 - shift.z)*Box.z;
     }
 }
-
-
+bool Atom::Should_Draw(){
+    return draw;
+}
+void Atom::Hide(){draw = false;}
+void Atom::Dont_Hide(){draw = true;}
 void Atom::Print(){
     std::cout << m_id << " " << m_type
     << " " << m_coords.x << " " << m_coords.y << " " << m_coords.z << std::endl;
@@ -220,69 +236,15 @@ CL_Atom::CL_Atom(const Atom& at)
 
 Bond::Bond(){}
 
-Bond::Bond(Atom& A,Atom& B)
+Bond::Bond(AMD::Vec3 A,AMD::Vec3 B)
 {
-    m_start = A.Get_Coords();
-    m_end = B.Get_Coords();
-    m_vec = m_end - m_start;
-    m_types.x = A.Get_Type();
-    m_types.y = B.Get_Type();
-    Set_Len();
-    Set_Theta();
-    Set_Phi();
-    
-    
+    m_origin = A;
+    m_dir = Boundary_Wrapped_Diff(B, A);
+    m_len = m_dir.len();
 }
 
 
 Bond::~Bond() {}
-
-
-
-
-void Bond::Set_Theta(){
-    AMD::Vec3 z_hat = AMD::Vec3(0.0, 0.0, 1.0);
-    m_ang.z = AMD::Get_angle(m_vec, z_hat);
-    
-}
-
-void Bond::Set_Phi(){
-    AMD::Vec3 y_hat = AMD::Vec3(0.0, -1.0, 0.0);
-    AMD::Vec3 xy = AMD::Vec3(this->m_vec.x, this->m_vec.y, 0.0);
-    float phi = AMD::Get_angle(xy, y_hat);
-    if(this->m_vec.x < 0){
-        m_ang.x = 6.283185307 - phi;
-    }
-    else{m_ang.x = phi;}
-    m_ang.y = 0.0;
-    return;
-}
-
-AMD::Vec3 Bond::get_off_set() {
-    AMD::Vec3 temp = m_vec*0.5;
-    return m_start + temp;
-}
-
-AMD::Vec3 &Bond::get_angles() {
-    return this->m_ang;
-}
-
-AMD::Vec2 &Bond::get_types() {
-    return this->m_types;
-}
-
-float Bond::get_len() { 
-    return m_len;
-}
-
-void Bond::Set_Len() { 
-    if((int)m_types.x == 2 && (int)m_types.y == 2){
-        m_len = m_vec.len() - 1.5;
-    }
-    else{m_len = m_vec.len() - 0.8;}
-    
-    
-}
 
 //
 //
@@ -297,9 +259,14 @@ void Molecule::Push_Atom(Atom* at){
 Atom** Molecule::Get_Atoms(){return &(m_ats[0]);}
 
 Dipole Molecule::Comp_Dipole(){
-    AMD::Vec3 v1 = m_ats[0]->Get_Coords() - m_ats[1]->Get_Coords();
-    AMD::Vec3 v2 = m_ats[0]->Get_Coords() - m_ats[2]->Get_Coords();
-    AMD::Vec3 dir = v1 + v2;
+    AMD::Vec3 v1;
+    AMD::Vec3 dir;
+    AMD::Vec3 A = m_ats[0]->Get_Coords();
+    for(int i = 1; i< m_num_ats; i++){
+    AMD::Vec3 B = m_ats[i]->Get_Coords();
+        v1 = AMD::Normalize(Boundary_Wrapped_Diff(A,B));
+        dir+=v1;
+    }
     m_dp.dir = AMD::Normalize(dir);
     m_dp.len = dir.len();
     m_dp.origin = m_ats[0]->Get_Coords();
@@ -312,7 +279,7 @@ void Molecule::Clear(){
 }
 
 
-bool H2O_Check(Atom& at, Atom** others){
+int H2O_Check(Atom& at, Atom** others){
     int num_H = 0;
     Atom** nebs = at.Get_Neighbors();
     for(int i = 0; i<at.Get_Num_Neighbors(); i++){
@@ -323,7 +290,8 @@ bool H2O_Check(Atom& at, Atom** others){
             num_H ++;
         }
     }
-    return (num_H >= 2);
+    if(num_H > 2){printf("num H = %d\n",num_H);}
+    return num_H;
 }
 
 Array_of_H2O::Array_of_H2O(){molecs = new Molecule[500];}
@@ -336,17 +304,22 @@ void Array_of_H2O::Comp_H2O(){
     int count = 0;
     Atom* ats = Sim->Atoms();
     Atom** nebs = (Atom**)malloc(5*sizeof(Atom*));
+    int num_neb = 0;
     for(int i = 0; i<num_ats; i++){
-        if(H2O_Check(ats[i], nebs)){
-            molecs[count].Clear();
-            molecs[count].Push_Atom(&(ats[i]));
-            molecs[count].Push_Atom(nebs[0]);
-            molecs[count].Push_Atom(nebs[1]);
+        //if(ats[i].Get_Type() != 79){continue;}
+        num_neb = H2O_Check(ats[i], nebs);
+        molecs[count].Clear();
+        molecs[count].Push_Atom(&(ats[i]));
+        if(num_neb >= 2){
+            for(int j = 0; j < num_neb; j++){
+                molecs[count].Push_Atom(nebs[j]);
+            }
             count ++;
         }
     }
     num_h2o = count;
     free(nebs);
+    printf("num H2O = %d\n",count);
 }
 //   This is the simulation class it contains all info about the simulation.
 
@@ -355,8 +328,7 @@ Simulation::Simulation()
 
 
 
-
-Simulation::~Simulation(){free(atoms);}
+Simulation::~Simulation(){free(m_atoms);}
 
 
 Simulation Simulation::inst;
@@ -365,18 +337,16 @@ Simulation* Simulation::Get(){ return &inst;}
 
 
 
-
-
-
 void Simulation::Init(const char* file, int ft){
     data->Init(file, ft);
+    m_num_blocks = data->num_dumps;
     m_num_atoms = data->dumps[0].dump_num_atoms;
-    atoms = (Atom*)malloc(m_num_atoms*sizeof(Atom));
+    m_atoms = (Atom*)malloc(m_num_atoms*sizeof(Atom));
     for(int i = 0; i<m_num_atoms; i++){
-        atoms[i] = Atom();
+        m_atoms[i] = Atom();
     }
     Set_Block(0);
-    m_bonds = (AMD::Vec3*)malloc(6*m_num_atoms*sizeof(AMD::Vec3));
+    m_bonds = (Bond*)malloc(6*m_num_atoms*sizeof(Bond));
     Compute_Neighbors();
     Check_Nebs();
     m_init = true;
@@ -386,20 +356,18 @@ void Simulation::Compute_Neighbors() {
     int count = 0;
     float dist;
     for (int i = 0; i< m_num_atoms; i++){
-        AMD::Vec3 A = atoms[i].Get_Coords();
+        AMD::Vec3 A = m_atoms[i].Get_Coords();
         if(A.x > 10000.0){continue;}
         for (int j = i+1; j< m_num_atoms; j++){
-            AMD::Vec3 B = atoms[j].Get_Coords();
+            AMD::Vec3 B = m_atoms[j].Get_Coords();
             if(B.x > 10000.0){continue;}
-            dist = Dist(A, B);
-            float cut = Comp_Bond_Length(atoms[i], atoms[j]);
+            dist = Boundary_Wrapped_Dist(A, B);
+            float cut = Comp_Bond_Length(m_atoms[i], m_atoms[j]);
             if(dist <= cut){
-                m_bonds[count] = A;
+                m_bonds[count] = Bond(A,B);
                 count++;
-                m_bonds[count] = B;
-                count++;
-                atoms[i].Push_Neighbor(atoms[j]);
-                atoms[j].Push_Neighbor(atoms[i]);
+                m_atoms[i].Push_Neighbor(m_atoms[j]);
+                m_atoms[j].Push_Neighbor(m_atoms[i]);
             }
         
         }
@@ -412,8 +380,8 @@ void Simulation::Compute_Neighbors() {
 void Simulation::Check_Nebs()
 {
     for(int i = 0; i<m_num_atoms; i++){
-        int num = atoms[i].Get_Num_Neighbors();
-        if(num < 1){atoms[i].Print();}
+        int num = m_atoms[i].Get_Num_Neighbors();
+        if(num < 1){m_atoms[i].Print();}
     }
 }
 
@@ -431,7 +399,7 @@ void Simulation::Set_Block(int block){
     m_lattice = data->dumps[block].m_lattice;
     
     for (int i = 0; i< m_num_atoms; i++){
-        atoms[i].Set_Vals(data->dumps[block].Atom_Lines[i]);
+        m_atoms[i].Set_Vals(data->dumps[block].Atom_Lines[i]);
     }
     
     m_curr_block = block;
@@ -458,7 +426,6 @@ void Simulation::Update_Sim(char dir){
 }
 
 
-
 bool Simulation::Is_Init(){
     return m_init;
 }
@@ -480,7 +447,6 @@ int Simulation::Num_Blocks(){
     return this->m_num_blocks;
 }
 
-
 AMD::Vec3 Simulation::Sim_Box(){
     float x = m_lattice[0][0];
     float y = m_lattice[1][1];
@@ -490,29 +456,29 @@ AMD::Vec3 Simulation::Sim_Box(){
 
 
 Atom* Simulation::Atoms(){
-    return atoms;
+    return m_atoms;
 }
 
-AMD::Vec3* Simulation::Bonds(){return m_bonds;}
+Bond* Simulation::Bonds(){return m_bonds;}
 
 void Simulation::print(Atom_Attrib attrib){
     switch (attrib) {
         case COORDS:
             for (int i = 0; i< m_num_atoms; i++){
-                atoms[i].Get_Coords().print();
+                m_atoms[i].Get_Coords().print();
                 std::cout << "=======================================" << std::endl;
             }
             break;
         case TYPE:
             for (int i = 0; i< m_num_atoms; i++){
-                std::cout << atoms[i].Get_Type() << std::endl;
+                std::cout << m_atoms[i].Get_Type() << std::endl;
                 std::cout << "=======================================" << std::endl;
             }
             break;
             
         case AT_NEIGHBORS:
             for (int i = 0; i< m_num_atoms; i++){
-                atoms[i].Print_Neighbors();
+                m_atoms[i].Print_Neighbors();
                 std::cout << "=======================================" << std::endl;
             }
             break;

@@ -76,18 +76,20 @@ Atoms_Mesh::~Atoms_Mesh()
 
 
 void Atoms_Mesh::Set_Data(){
-    
+    int count = 0;
     m_num_atoms = Sim->Num_Atoms();
     Atom* ats = Sim->Atoms();
     AMD::Vec3 center = Sim->Sim_Box()*(-0.5);
     for(int i = 0; i < m_num_atoms; i++){
         int typ = ats[i].Get_Type();
         atom_info a_info = Get_Atom_Info(typ);
-        m_offsets[i] = ats[i].Get_Coords();
-        m_offsets[i]+=center;
-        m_radii[i] = a_info.rad;
-        m_clrs[i] = a_info.clr;
+        m_offsets[count] = ats[i].Get_Coords();
+        m_offsets[count]+=center;
+        m_radii[count] = a_info.rad;
+        m_clrs[count] = a_info.clr;
+        count++;
     }
+    m_num_atoms = count;
     printf("Set Data Atoms Mesh.\n");
 }
 
@@ -104,6 +106,10 @@ void Atoms_Mesh::Set_Uniforms(Light_Src& src){
     this->m_sh.Set_Uniform_MVP();
     this->m_sh.Set_Uniform_Normal();
     this->m_sh.Set_Uinform_LightSource(src);
+    float t_lo = Sim->slice_lo;
+    float t_hi = Sim->slice_hi;
+    this->m_sh.Set_Uniform_Float("lo",t_lo);
+    this->m_sh.Set_Uniform_Float("hi",t_hi);
 }
 
 void Atoms_Mesh::Draw(){
@@ -130,26 +136,41 @@ void Atoms_Mesh::Draw(){
 
 //#############  BOND MESH CLASS ###############################################
 Bond_Mesh::Bond_Mesh()
-:m_sh(shader_file){
-    m_vert_vbo = m_VAO.Add_Dynamic_Buffer(sizeof(AMD::Vec3));
+:m_sh(shader_file)
+{
+    Cylinder cyl;
+    VertexBuffer vb(cyl.verts, cyl.num_verts()*sizeof(AMD::Vertex_TX));
+    m_VAO.Add_Vertex_Buffer(vb);
+    m_IBO.Gen_Buffer(cyl.indices,cyl.num_idx());
+    m_pos_vbo = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec3));
+    m_rot_vbo = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(AMD::Vec3));
+    m_scale_vbo = m_VAO.Add_Dynamic_Instance_Buffer(sizeof(float));
 }
 
 Bond_Mesh::~Bond_Mesh() {
-    if(init){free(m_verts);}
+    if(init){
+        free(m_pos);
+        free(m_scale);
+        free(m_rot);
+    }
 }
 
 void Bond_Mesh::Set_Data() {
-    int num_bonds = Sim->Num_Bonds();
+    int num = Sim->Num_Bonds();
     if(!init){
-        m_num_verts = num_bonds;
-        m_verts = (AMD::Vec3*)malloc(m_num_verts*sizeof(AMD::Vec3));
+        m_pos = (AMD::Vec3*)malloc(num*sizeof(AMD::Vec3));
+        m_rot = (AMD::Vec3*)malloc(num*sizeof(AMD::Vec3));
+        m_scale = (float*)malloc(num*sizeof(float));
         init = true;
     }
-    
-    AMD::Vec3* bonds = Sim->Bonds();
-    AMD::Vec3 offset = -0.5*Sim->Sim_Box();
-    for(int i = 0; i< m_num_verts; i++){
-        m_verts[i]= bonds[i] + offset;
+    m_num = 0;
+    Bond* bonds = Sim->Bonds();
+    AMD::Vec3 center = Sim->Sim_Box()*(-0.5);
+    for(int i = 0; i < num ; i++){
+        m_pos[m_num] = bonds[i].m_origin + center;
+        m_rot[m_num] = AMD::Comp_Rot_Angles(bonds[i].m_dir);
+        m_scale[m_num] = bonds[i].m_len;
+        m_num++;
     }
 }
 
@@ -159,6 +180,12 @@ void Bond_Mesh::Set_Shader() {
 
 void Bond_Mesh::Set_Uniforms(Light_Src& l_src) {
     this->m_sh.Set_Uniform_MVP();
+    this->m_sh.Set_Uniform_Normal();
+    this->m_sh.Set_Uinform_LightSource(l_src);
+    float t_lo = Sim->slice_lo;
+    float t_hi = Sim->slice_hi;
+    this->m_sh.Set_Uniform_Float("lo",t_lo);
+    this->m_sh.Set_Uniform_Float("hi",t_hi);
 }
 
 void Bond_Mesh::Set_Uniforms() {
@@ -166,12 +193,21 @@ void Bond_Mesh::Set_Uniforms() {
 }
 
 void Bond_Mesh::Draw() {
-    glBindBuffer(GL_ARRAY_BUFFER,m_vert_vbo);
-    glBufferData(GL_ARRAY_BUFFER, m_num_verts*sizeof(AMD::Vec3), (void*)m_verts, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,m_pos_vbo);
+    glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec3), (void*)m_pos, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ARRAY_BUFFER,m_rot_vbo);
+    glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec3), (void*)m_rot, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ARRAY_BUFFER,m_scale_vbo);
+    glBufferData(GL_ARRAY_BUFFER, m_num*sizeof(AMD::Vec3), (void*)m_scale, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER,0);
     
+    
     this->m_VAO.bind();
-    glDrawArrays(GL_LINES,0,m_num_verts);
+    this->m_IBO.bind();
+    glDrawElementsInstanced(GL_TRIANGLES,m_IBO.get_num(), GL_UNSIGNED_INT,0, m_num);
+    this->m_IBO.unbind();
     this->m_VAO.unbind();
 }
 
@@ -219,7 +255,6 @@ void Vector_Mesh::Set_Data(const Array_of_H2O& h2o){
         m_scale = (float*)malloc(num*sizeof(float));
         init = true;
     }
-    float ay, az;
     m_num = 0;
     Molecule* mols = h2o.molecs;
     AMD::Vec3 z_hat(0.0,0.0, 1.0);
@@ -228,9 +263,7 @@ void Vector_Mesh::Set_Data(const Array_of_H2O& h2o){
     for(int i = 0; i < h2o.num_h2o ; i++){
         Dipole dp = mols[i].Comp_Dipole();
         m_pos[m_num] = dp.origin + center;
-        ay = AMD::Get_angle(dp.origin, z_hat);
-        az = AMD::Get_angle(dp.origin, y_hat);
-        m_rot[m_num] = AMD::Vec3(0.0,ay,az);
+        m_rot[m_num] = AMD::Comp_Rot_Angles(dp.dir);
         m_scale[m_num] = dp.len;
         m_num++;
     }

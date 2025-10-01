@@ -258,6 +258,8 @@ void UI_Window::Simple_window(){
     static float C_phi = 0.0;
     static int timestep = 0;
     static bool ft = false;
+    static float slice_lo = -20.;
+    static float slice_hi = 20.;
     static AMD::Vec3 trans;
     static AMD::Vec3 look;
     static AMD::Vec3 Cam_Pos(-5.5,0.0,-65.0);
@@ -286,7 +288,6 @@ void UI_Window::Simple_window(){
     display_w = ui_size.x;
     display_h = ui_size.y;
 
-    ImGui::Text("display W = %d, display H = %d", display_w,display_h);
     //enum File_Type {lammps, qe, jdftx, ase};
     const char* fts[4] = {"LAMMPS/dump", "Quantum Espresso", "JDFTX", "ASE/XYZ"};
     static char atom_file[128] = "../Other/meta.dump";
@@ -473,6 +474,7 @@ void UI_Window::Simple_window(){
     static bool wire = false;
     static bool vox = false;
     static bool vector_field = false;
+    static bool hide = false;
 
     if (ImGui::CollapsingHeader("Draw Call/ Computes", ImGuiTreeNodeFlags_None)){
     if(ImGui::Checkbox("Draw Atoms", &atoms)){
@@ -482,6 +484,12 @@ void UI_Window::Simple_window(){
     if(ImGui::Checkbox("Draw Dipole", &vector_field)){
         if(vector_field){rend->Push_Call(1);}
         else{rend->Pop_Call(1);}
+    }
+    if(vector_field){
+        ImGui::SameLine();
+        if(ImGui::Checkbox("Hide H2O",&hide )){
+            ;
+        }
     }
     if(ImGui::Checkbox("Draw Density", &rho)){
         if(rho){rend->Push_Call(2);}
@@ -496,6 +504,8 @@ void UI_Window::Simple_window(){
         else{rend->Pop_Call(4);}
     }
     }
+    if(ImGui::InputFloat("Slice High", &slice_hi, 0.05f, 0.5f, "%.2f")){Sim->slice_hi = slice_hi;op->need_update = true;}
+    if(ImGui::InputFloat("Slice Low", &slice_lo, 0.05f, 0.5f, "%.2f")){Sim->slice_lo = slice_lo; op->need_update = true;}
 
     if (ImGui::Button("SAVE"))
         ImGui::OpenPopup("Save");

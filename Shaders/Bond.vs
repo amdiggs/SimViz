@@ -1,63 +1,74 @@
 #SHADER VERTEX
 #version 330 core
 layout (location = 0) in vec3 v_pos;
+layout (location = 1) in vec4 v_color;
+layout (location = 2) in vec3 v_norm;
+layout (location = 3) in vec2 v_tex;
+layout (location = 4) in float v_layer;
+layout (location = 5) in vec3 v_offset;
+layout (location = 6) in vec3 v_rot;
+layout (location = 7) in float v_scale;
 
 
-uniform mat4 u_MVP;
-
-void main()
-{
-    gl_Position = u_MVP * vec4(v_pos,1.0);
-    
-}
-#END
-
-#SHADER GEOMETRY
-#version 330 core
-layout (lines) in;
-layout (triangle_strip, max_vertices = 4) out;
-
+out vec3 f_norm;
+out vec4 f_color;
 out vec4 f_pos;
+out float height;
+uniform mat4 u_MVP;
+uniform mat3 u_Normal;
 
-vec3 CAM = vec3(0.0,0.0,-15.0);
 
-vec4 OFFSET(){
-    vec4 dir = gl_in[1].gl_Position - gl_in[0].gl_Position;
-    vec3 tmp = 0.1f*normalize(cross(dir.xyz,CAM));
-    return vec4(tmp,0.0);
+vec3 Rotate(vec3 ang, vec3 pos){
+    float a = ang.x;
+    float b = ang.y;
+    float c = ang.z;
+
+    vec3 r0 = vec3(cos(c),-1.0*sin(c)*cos(a), sin(c)*sin(a));
+    vec3 r1 = vec3(sin(c),cos(c)*cos(a), -cos(c)*sin(a));
+    vec3 r2 = vec3(-sin(b), sin(a), cos(a));
+    
+    float x = dot(r0,pos);
+    float y = dot(r1,pos);
+    float z = dot(r2,pos);
+    return vec3(x,y,z);
 }
 
 
 void main()
 {
-    vec4 offset = OFFSET();
-    gl_Position = gl_in[0].gl_Position + offset;
-    f_pos = gl_in[0].gl_Position + offset;
-    EmitVertex();
-    
-    gl_Position = gl_in[0].gl_Position - offset;
-    f_pos = gl_in[0].gl_Position - offset;
-    EmitVertex();
-    
-    gl_Position = gl_in[1].gl_Position + offset;
-    f_pos = gl_in[1].gl_Position + offset;
-    EmitVertex();
-    
-    gl_Position = gl_in[1].gl_Position - offset;
-    f_pos = gl_in[1].gl_Position - offset;
-    EmitVertex();
-    
-    EndPrimitive();
+
+    vec3 new_pos = v_offset + 0.33*Rotate(v_rot,v_pos);
+    gl_Position =  u_MVP * vec4(new_pos,1.0);
+    f_norm = u_Normal * Rotate(v_rot,v_norm);
+    f_color = v_color;
+    f_pos =  u_MVP * vec4(new_pos,1.0);
+    height = v_offset.z;
 }
 #END
 
-
-
+/////////////////////////////////////////////////////////////////////////////////////
 
 #SHADER FRAGMENT
 #version 330 core
 layout (location = 0) out vec4 color;
+
+
+in vec3 f_norm;
+in vec4 f_color;
 in vec4 f_pos;
+in float height;
+//Light Uniforms Struct
+struct Light_Source{
+    vec4 clr;
+    vec3 dir;
+    float sat;
+    
+};
+
+uniform Light_Source l_src;
+uniform float hi;
+uniform float lo;
+
 float Compute_Fog(vec4 pos){
     //float dist = abs(-65.0 - (pos.z/pos.w));
     // pos min = 40.0 pos max = 75.0 ?
@@ -67,13 +78,24 @@ float Compute_Fog(vec4 pos){
     return smoothstep(0.0,1.0,dist);
 }
 
-vec4 Fog_Color = vec4(1.0,1.0,1.0,0.5);
 
+bool in_range(float h){
+    bool tmp = (h > lo && h < hi);
+    return tmp;
+}
 
+vec4 Fog_Color = vec4(0.8,0.60,0.60,0.5);
 void main()
 {
-    vec4 fog = Compute_Fog(f_pos)*Fog_Color;
-    color = vec4(0.2,0.2,0.2,0.65) + fog;
+    float l_dot = 0.5*(dot(-l_src.dir,f_norm) + 1.0);
+    float ma = f_color.a;
+    float ff = Compute_Fog(f_pos);
+    if(in_range(height)){
+    color = vec4(0.4,0.4,0.4,0.75);
+    }
+    else{
+        discard;
+    }
 }
 
 #END

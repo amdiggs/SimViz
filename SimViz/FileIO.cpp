@@ -149,6 +149,13 @@ bool match_jdftx_ions(const char* line){return std::regex_match(line,re_jdftx_io
 bool match_jdftx_iter(const char* line){return std::regex_match(line,re_jdftx_iter);}
 bool match_jdftx_ion_line(const char* line){return std::regex_match(line,re_jdftx_ion_line);}
 
+
+
+const std::regex re_xyz_lattice("^Lattice=");
+bool match_xyz_lattice(const char* line){return std::regex_match(line,re_xyz_lattice);}
+//const std::regex re_jdftx_ion_line("^ion");
+
+
 unsigned int Get_Num_El(std::string line){
     bool ws = true;
     unsigned int count = 0;
@@ -204,6 +211,27 @@ String_List::String_List(std::string line){
         else{
             word_indx = 0;
             while((i < line.length()) && (!std::isspace(line[i]))){
+                word[word_indx] = line[i];
+                word_indx++;
+                i++;
+            }
+            m_words[m_num_el].assign(word);
+            m_num_el++;
+        }
+       
+    }
+}
+
+String_List::String_List(const char* line){
+    unsigned int word_indx = 0;
+    for(int i = 0; i < strlen(line); i++){
+        char word[100] = "";
+        if(std::isspace(line[i])){
+            continue;
+        }
+        else{
+            word_indx = 0;
+            while((i < strlen(line)) && (!std::isspace(line[i]))){
                 word[word_indx] = line[i];
                 word_indx++;
                 i++;
@@ -369,6 +397,33 @@ void Dump::Set_Lattice(std::ifstream& file_stream, size_t &pos){
     pos = file_stream.tellg();
 }
 
+void Dump::Set_XYZ_Lattice(std::string line){
+    std::stringstream ss;
+    float x,y,z;
+    const char* arr = line.c_str();
+    char latt[256];
+    bool in_side = false;
+    int count = 0;
+    for(int i = 0; i<256; i++){
+        if(in_side){
+            if(arr[i] == 22){break;}
+            latt[count] = arr[i];
+            count++;
+        }
+        else{if(arr[i] == 22){in_side = true;}}
+    }
+    String_List vals(latt);
+    int col = 0;
+    for(int i = 0; i<9; i+=3){
+        x = atof(vals.m_words[i].c_str());
+        y = atof(vals.m_words[i + 1].c_str());
+        z = atof(vals.m_words[i + 2].c_str());
+        AMD::Vec3 vec(x,y,z);
+        this-> m_lattice.assign_col(col, vec);
+        col++;
+    }
+}
+
 void Dump::Set_Params_LAMMPS(std::string line){
     std::stringstream ss;
     ss << line;
@@ -388,6 +443,9 @@ void Dump::Init(std::ifstream& file_stream, size_t& pos){
             Set_Data_LAMMPS(file_stream, pos);
             break;
         case qe:
+            break;
+        case ase:
+            Set_Data_XYZ(file_stream, pos);
             break;
         case jdftx:
             Set_Data_JDFTX(file_stream, pos);
@@ -524,6 +582,55 @@ void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
     init = true;
 }
 
+
+
+
+void Dump::Set_Data_XYZ(std::ifstream& file_stream, size_t& pos){
+    std::string line;
+    file_stream.seekg(pos);
+    std::getline(file_stream, line);
+    this->timestep = get_int(line.c_str());
+    int count = 0;
+    while(std::getline(file_stream, line)){
+        if(match_int(line.c_str())){
+            pos = file_stream.tellg();
+            pos -= line.length() + 1;
+            file_stream.seekg(pos);
+            break;
+        }
+        else if(match_xyz_lattice(line.c_str())){
+            //pos = file_stream.tellg();
+            Set_XYZ_Lattice(line);
+        }// end of box else if
+        
+        else{
+            int id;
+            int type;
+            std::string str_type;
+            float x,y,z;
+            Atom_Lines = (Atom_Line*)malloc(sizeof(Atom_Line));
+            std::getline(file_stream, line);
+            while(match_jdftx_ion_line(line.c_str())){
+                Atom_Lines = (Atom_Line*)realloc(Atom_Lines, (count+1)*sizeof(Atom_Line));
+                String_List sl(line);
+                id = count;
+                type = El_Hash(sl.m_words[0].c_str());
+                x = atof(sl.m_words[1].c_str());
+                y = atof(sl.m_words[2].c_str());
+                z = atof(sl.m_words[3].c_str());
+                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
+                Atom_Lines[count] = Atom_Line(id,type,cartesian_coords);
+                count ++;
+                std::getline(file_stream, line);
+                }
+            dump_num_atoms = count;
+        } // end of atom line else if
+      
+    }// end of while loop
+    init = true;
+}
+
+
 Dump_Arr::Dump_Arr(){}
 
 void Dump_Arr::Init(const char* dat_file, int ft){
@@ -539,11 +646,11 @@ void Dump_Arr::Init(const char* dat_file, int ft){
     pos =infile.tellg();
     this->dumps=(Dump*)malloc(sizeof(Dump));
     while(!infile.eof()){
-        this->dumps=(Dump*)realloc(dumps,(num_iter+1)*sizeof(Dump));
+        this->dumps=(Dump*)realloc(dumps,(num_dumps+1)*sizeof(Dump));
         Dump step;
         step.Init(infile,pos);
-        this->dumps[num_iter]= step;
-        num_iter++;
+        this->dumps[num_dumps]= step;
+        num_dumps++;
     }
     init = true;
 }

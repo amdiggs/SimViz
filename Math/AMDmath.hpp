@@ -306,6 +306,7 @@ Mat4 ROTATION_MATRIX(Vec3 ang);
 
 float Get_angle(const Vec3& A, const Vec3& B);
 
+Vec3 Comp_Rot_Angles(AMD::Vec3 vec);
 float Distance(const Vec3& A, const Vec3& B);
 void Compute_norms(Vertex_TX* verts,unsigned int* ints, int num);
 
@@ -320,6 +321,7 @@ Mat4 Perspective_Matrix(Vec4);
 Mat4 Orthographic_Matrix(Vec4);
 
 
+float dot(const Vec3& A, const Vec3& B);
 int Min(int a, int b);
 float Min(float a, float b);
 int Max(int a, int b);

@@ -60,7 +60,10 @@ public:
     void Shift();
     void Print();
     void Print_Neighbors();
-    
+    bool draw = true;
+    bool Should_Draw();
+    void Hide();
+    void Dont_Hide();
     Atom& operator=(const Atom& other);
     friend CL_Atom;
 
@@ -76,30 +79,15 @@ struct CL_Atom{
 };
 
 
-class Bond{
-private:
+struct Bond{
 
-    AMD::Vec3 m_start;
-    AMD::Vec3 m_end;
-    AMD::Vec3 m_vec;
-    AMD::Vec3 m_ang;
+    AMD::Vec3 m_origin;
+    AMD::Vec3 m_dir;
     float m_len;
-    
-    
-public:
+
     Bond();
-    Bond(Atom& A,Atom& B);
+    Bond(AMD::Vec3 A,AMD::Vec3 B);
     ~Bond();
-    void Set_Theta();
-    void Set_Phi();
-    void Set_Len();
-    
-    AMD::Vec3 get_off_set();
-    AMD::Vec3& get_angles();
-    AMD::Vec2& get_types();
-    AMD::Vec2 m_types;
-    float get_len();
-    
 };
 
 struct Dipole{
@@ -110,7 +98,7 @@ struct Dipole{
 
 class Molecule {
 private:
-    Atom* m_ats[5];
+    Atom* m_ats[10];
     int m_num_ats=0;
     Dipole m_dp;
 
@@ -136,23 +124,21 @@ struct Array_of_H2O{
 
 class Simulation{
 private:
-    
     // general info about simulation
     int m_timestep;
-    int m_num_atoms;
     AMD::Mat3 m_lattice;
     
     int m_num_blocks;
     int m_curr_block;
     
+    //Dump* m_data;
+    int m_num_atoms;
+    Atom* m_atoms = NULL;
+    int m_num_bonds;
+    Bond* m_bonds=NULL;
     
     bool m_init;
     bool m_need_update = false;
-    int m_num_bonds;
-    
-    //Dump* m_data;
-    Atom* atoms = NULL;
-    AMD::Vec3* m_bonds=NULL;
     //private functions
     void Set_Block(int start);
     void Update_Sim(char dir);
@@ -163,7 +149,6 @@ private:
     Simulation(const Simulation&) = delete;
     static Simulation inst;
     
-    
     //needed for rendering
     //int neighbor_IDs[4*MAX_ATOMS][2];
 public:
@@ -171,7 +156,8 @@ public:
     static Simulation* Get();
     ~Simulation();
     AMD::Vec3 shift;
-    
+    float slice_lo = -20.0;
+    float slice_hi = 20.0;
     //Getters
     int Timestep();
     int Num_Atoms();
@@ -179,7 +165,7 @@ public:
     int Num_Blocks();
     AMD::Vec3 Sim_Box();
     Atom* Atoms();
-    AMD::Vec3* Bonds();
+    Bond* Bonds();
     bool Is_Init();
     bool Need_Update(){return m_need_update;}
     void Updated(){m_need_update = false;}

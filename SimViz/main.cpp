@@ -86,6 +86,7 @@ void Draw(){
         rend->Draw_Pass();
         //rend->Draw();
         if(Sim->Is_Init()){
+        if(op->need_update){op->Set();}
             for(int i = 0; i<rend->num_calls; i++){
                 int idx = rend->calls[i];
                 Draw_Funcs[idx]();
@@ -100,8 +101,7 @@ void Draw(){
 
 }
 
-
-const char* atom_file = "Other/IrO2.dump";
+const char* atom_file = "../Other/meta.dump";
 
 const char* rho_file = "/Users/diggs/Desktop/VolumeData/out-Q0-rho-10-01-24/Q0-rho.dat";
 
@@ -116,6 +116,25 @@ int main(int argc, const char * argv[]) {
 // User should be able to render any combination of 
 // Atoms, voxels, voxelized atoms, bonds, iso-surface, voxel wire frame.
 /*
+    Array_of_H2O h2o;
+    h2o.Comp_H2O();
+    Molecule* mols = h2o.molecs;
+    AMD::Vec3 ang;
+    AMD::Vec3 rot;
+    AMD::Vec3 z_hat(0.,0.,1.0);
+    for(int i = 0; i < h2o.num_h2o ; i++){
+        Dipole dp = mols[i].Comp_Dipole();
+        ang = AMD::Comp_Rot_Angles(dp.dir);
+        rot = Rotate(ang, z_hat);
+        printf("##################\n");
+        dp.dir.print();
+        rot.print();
+        float x = cos(ang.z);
+        float y = sin(ang.z);
+        printf("ang: %.3f %.3f\n",x,y);
+        ang.print();
+    }
+
         */
 //It should look like 
 //main{
@@ -129,30 +148,37 @@ int main(int argc, const char * argv[]) {
 void Draw_Atoms(){
     static bool init = false;
     static Sim_Box_Mesh sbm;
+    static Bond_Mesh bd;
     static Atoms_Mesh ats;
     if(!Sim->Is_Init()){return;}
     if(!init){
         rend->Push_Mesh(sbm);
         rend->Push_Mesh(ats);
+        rend->Push_Mesh(bd);
         sbm.Set_Data();
         ats.Set_Data();
+        bd.Set_Data();
         op->Set();
         ats.Set_Uniforms(l_src);
         sbm.Set_Uniforms(l_src);
+        bd.Set_Uniforms(l_src);
         init = true;
     }
         if(op->need_update){
-            op->Set();
             ats.Set_Uniforms(l_src);
             sbm.Set_Uniforms(l_src);
+            bd.Set_Uniforms(l_src);
         }
     sbm.Set_Shader();
     sbm.Draw();
 
     ats.Set_Shader();
     ats.Draw();
+    bd.Set_Shader();
+    bd.Draw();
     if (Sim->Need_Update()) {
         ats.Set_Data();
+        bd.Set_Data();
     }
 }
 
@@ -173,7 +199,6 @@ void Draw_Vector_Field(){
         init = true;
     }
         if(op->need_update){
-            op->Set();
             vm.Set_Uniforms(l_src);
         }
     vm.Set_Shader();

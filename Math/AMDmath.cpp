@@ -940,7 +940,18 @@ float AMD::Get_angle(const Vec3& A, const Vec3& B){
     }
 }
 
+AMD::Vec3 AMD::Comp_Rot_Angles(AMD::Vec3 vec){
+    AMD::Vec3 Nv = Normalize(vec);
+    float a = 0.;
+    float b = 0.;
+    float c = 0.;
+    a = acos(Nv.z);
+    //if(sin(a) < 0.0001f){return AMD::Vec3(a,b,c);}
+    float tmp = (-1.0*Nv.y)/sin(a);
+    c = (Nv.x > 0) ? acos(tmp) : -1.0*acos(tmp);
+    return AMD::Vec3(a,b,c);
 
+}
 
 float AMD::Distance(const Vec3& A, const Vec3& B){
     AMD::Vec3 temp = A - B;
@@ -951,7 +962,9 @@ AMD::Vec3 AMD::Round(const Vec3& vec, int decimals){
     return AMD::Vec3(Round(vec.x, decimals),Round(vec.y, decimals),Round(vec.z, decimals));
 }
 
-
+float AMD::dot(const Vec3 &A, const Vec3 &B){
+    return A.dot(B);
+}
 
 void AMD::Compute_norms(Vertex_TX* verts,unsigned int* ints, int num){
     Vec3 A, B, _norm;

@@ -21,14 +21,10 @@ vec3 Rotate(vec3 ang, vec3 pos){
     float a = ang.x;
     float b = ang.y;
     float c = ang.z;
-    
-    //float3 r0 = (float3)(cos(c)*cos(b),cos(c)*sin(b)*sin(a) - sin(c)*cos(a) , cos(c)*sin(b)*cos(a)+sin(c)*sin(a));
-    //float3 r1 = (float3)(sin(c)*cos(b), sin(c)*sin(b)*sin(a) + cos(c)*cos(a), sin(c)*sin(b)*cos(a)-cos(c)*sin(a));
-    //float3 r2 = (float3)(-sin(b), cos(b)*sin(a), cos(b)*cos(a));
-    
-    vec3 r0 = vec3(cos(b),sin(b)*sin(a), sin(b)*cos(a));
-    vec3 r1 = vec3(sin(c),cos(a), -sin(a));
-    vec3 r2 = vec3(-sin(b), cos(b)*sin(a), cos(b)*cos(a));
+
+    vec3 r0 = vec3(cos(c),-1.0*sin(c)*cos(a), sin(c)*sin(a));
+    vec3 r1 = vec3(sin(c),cos(c)*cos(a), -cos(c)*sin(a));
+    vec3 r2 = vec3(-sin(b), sin(a), cos(a));
     
     float x = dot(r0,pos);
     float y = dot(r1,pos);
@@ -40,7 +36,7 @@ vec3 Rotate(vec3 ang, vec3 pos){
 void main()
 {
 
-    vec3 new_pos = v_offset + v_scale*0.33*Rotate(v_rot,v_pos);
+    vec3 new_pos = v_offset + 0.33*Rotate(v_rot,v_pos);
     gl_Position =  u_MVP * vec4(new_pos,1.0);
     f_norm = u_Normal * Rotate(v_rot,v_norm);
     f_color = v_color;

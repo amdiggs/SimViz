@@ -59,9 +59,11 @@ struct Dump
     void Init(std::ifstream& file_stream, size_t& pos);
     void Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos);
     void Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos);
+    void Set_Data_XYZ(std::ifstream& file_stream, size_t& pos);
     void Set_Params_LAMMPS(std::string line);
     void Set_Params_JDFTX(std::string line);
     void Set_Lattice(std::ifstream& file_stream, size_t& pos);
+    void Set_XYZ_Lattice(std::string line);
 };
 
 
@@ -75,7 +77,7 @@ private:
 
 public:
     Dump* dumps = NULL;
-    unsigned int num_iter=0;
+    unsigned int num_dumps=0;
     bool init = false;
     static Dump_Arr* Get();
     void Init(const char* dat_file, int ft);
@@ -119,6 +121,7 @@ struct String_List{
     std::string& operator[](const int index);
     int m_num_el = 0;
     String_List(std::string line);
+    String_List(const char* line);
     ~String_List();
     void print();
 };
