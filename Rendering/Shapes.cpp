@@ -940,8 +940,6 @@ void Arrow::Gen_points() {
         count ++;
     }
     m_num_verts = count;
-printf("num_verts = %d\n", m_num_verts);
-    
 }
 
 void Arrow::Gen_indices() {
@@ -966,9 +964,6 @@ void Arrow::Gen_indices() {
     }
     m_num_idx = count;
     offset = con.num_idx() + cyl.num_idx() + cir.num_idx();
-printf("num_idx = %d\n", m_num_idx);
-printf("off = %d\n", offset);
-printf("%d %d %d\n", con.num_idx(), cyl.num_idx(), cir.num_idx());
 }
 
 

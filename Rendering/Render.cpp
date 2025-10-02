@@ -258,8 +258,8 @@ void UI_Window::Simple_window(){
     static float C_phi = 0.0;
     static int timestep = 0;
     static bool ft = false;
-    static float slice_lo = -20.;
-    static float slice_hi = 20.;
+    static float slice_lo = -50.;
+    static float slice_hi = 50.;
     static AMD::Vec3 trans;
     static AMD::Vec3 look;
     static AMD::Vec3 Cam_Pos(-5.5,0.0,-65.0);
@@ -290,7 +290,7 @@ void UI_Window::Simple_window(){
 
     //enum File_Type {lammps, qe, jdftx, ase};
     const char* fts[4] = {"LAMMPS/dump", "Quantum Espresso", "JDFTX", "ASE/XYZ"};
-    static char atom_file[128] = "../Other/meta.dump";
+    static char atom_file[128] = "";
     ImGui::Text("File: %s", atom_file);
     static bool loaded = false;
     if(!loaded){
@@ -470,6 +470,7 @@ void UI_Window::Simple_window(){
 
     static bool atoms = false;
     //static bool iso = false;
+    static bool bonds = false;
     static bool rho = false;
     static bool wire = false;
     static bool vox = false;
@@ -488,8 +489,14 @@ void UI_Window::Simple_window(){
     if(vector_field){
         ImGui::SameLine();
         if(ImGui::Checkbox("Hide H2O",&hide )){
-            ;
+            if(hide){Sim->hide = true;}
+            else{Sim->hide = false;}
+        Simulation::Get()->Step_Zero();
         }
+    }
+    if(ImGui::Checkbox("Draw Bonds", &bonds)){
+        if(vector_field){rend->Push_Call(2);}
+        else{rend->Pop_Call(1);}
     }
     if(ImGui::Checkbox("Draw Density", &rho)){
         if(rho){rend->Push_Call(2);}

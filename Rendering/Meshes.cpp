@@ -59,6 +59,7 @@ Atoms_Mesh::Atoms_Mesh()
     
     //I don't remember why but for some reason I have a sneaking memory of needing some padding
     int num_ats = Sim->Num_Atoms() + 100;
+    printf("num ats = %d\n", num_ats);
     m_clrs = (AMD::Vec4*)malloc(num_ats*sizeof(AMD::Vec4));
     m_offsets = (AMD::Vec3*)malloc(num_ats*sizeof(AMD::Vec3));
     m_radii = (float*)malloc(num_ats*sizeof(float));
@@ -77,10 +78,12 @@ Atoms_Mesh::~Atoms_Mesh()
 
 void Atoms_Mesh::Set_Data(){
     int count = 0;
-    m_num_atoms = Sim->Num_Atoms();
+    int tot_atoms = Sim->Num_Atoms();
+    printf("Num Ats = %d\n",tot_atoms);
     Atom* ats = Sim->Atoms();
     AMD::Vec3 center = Sim->Sim_Box()*(-0.5);
-    for(int i = 0; i < m_num_atoms; i++){
+    for(int i = 0; i < tot_atoms; i++){
+        if(Sim->hide && !ats[i].draw){continue;}
         int typ = ats[i].Get_Type();
         atom_info a_info = Get_Atom_Info(typ);
         m_offsets[count] = ats[i].Get_Coords();
@@ -90,7 +93,7 @@ void Atoms_Mesh::Set_Data(){
         count++;
     }
     m_num_atoms = count;
-    printf("Set Data Atoms Mesh.\n");
+    printf("Num Ats = %d\n",m_num_atoms);
 }
 
 

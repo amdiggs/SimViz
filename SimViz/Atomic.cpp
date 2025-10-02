@@ -11,6 +11,7 @@
 #include "AtomInfo.h"
 #include "Meshes.hpp"
 #include <cstddef>
+#include <malloc/_malloc.h>
 Simulation* Sim = Simulation::Get();
 extern Dump_Arr* data;
 
@@ -74,7 +75,7 @@ Atom::Atom(Atom_Line al)
 }
 
 Atom::Atom(int _id, int _type, float x, float y, float z)
-:m_id(_id), m_type(_type),m_coords(x, y, z), m_num_neighbors(0)
+:m_id(_id), m_type(_type),m_coords(x, y, z), m_num_neighbors(0), draw(true)
 {}
 
 Atom& Atom::operator=(const Atom& other){
@@ -290,7 +291,7 @@ int H2O_Check(Atom& at, Atom** others){
             num_H ++;
         }
     }
-    if(num_H > 2){printf("num H = %d\n",num_H);}
+    //if(num_H > 2){printf("num H = %d\n",num_H);}
     return num_H;
 }
 
@@ -308,11 +309,13 @@ void Array_of_H2O::Comp_H2O(){
     for(int i = 0; i<num_ats; i++){
         //if(ats[i].Get_Type() != 79){continue;}
         num_neb = H2O_Check(ats[i], nebs);
-        molecs[count].Clear();
-        molecs[count].Push_Atom(&(ats[i]));
         if(num_neb >= 2){
+            molecs[count].Clear();
+            molecs[count].Push_Atom(&(ats[i]));
+            ats[i].draw = false;
             for(int j = 0; j < num_neb; j++){
                 molecs[count].Push_Atom(nebs[j]);
+                nebs[j]->draw = false;
             }
             count ++;
         }
@@ -328,7 +331,7 @@ Simulation::Simulation()
 
 
 
-Simulation::~Simulation(){free(m_atoms);}
+Simulation::~Simulation(){delete [] m_atoms; free(m_bonds);}
 
 
 Simulation Simulation::inst;
@@ -341,10 +344,7 @@ void Simulation::Init(const char* file, int ft){
     data->Init(file, ft);
     m_num_blocks = data->num_dumps;
     m_num_atoms = data->dumps[0].dump_num_atoms;
-    m_atoms = (Atom*)malloc(m_num_atoms*sizeof(Atom));
-    for(int i = 0; i<m_num_atoms; i++){
-        m_atoms[i] = Atom();
-    }
+    m_atoms = new Atom[m_num_atoms];
     Set_Block(0);
     m_bonds = (Bond*)malloc(6*m_num_atoms*sizeof(Bond));
     Compute_Neighbors();

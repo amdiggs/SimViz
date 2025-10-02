@@ -156,8 +156,9 @@ public:
     static Simulation* Get();
     ~Simulation();
     AMD::Vec3 shift;
-    float slice_lo = -20.0;
-    float slice_hi = 20.0;
+    float slice_lo = -50.0;
+    float slice_hi = 50.0;
+    bool hide = false;
     //Getters
     int Timestep();
     int Num_Atoms();

@@ -75,15 +75,19 @@ bool Check_FT(const char* ft){
 void Set_File_Type(int ft){
     switch (ft) {
         case 0:
+            printf("Set LAMMPS Data\n");
             file_type = lammps;
             break;
         case 1:
+            printf("Set Quantum Espresso Data\n");
             file_type = qe;
             break;
         case 2:
+            printf("Set JDFTX Data\n");
             file_type = jdftx;
             break;
         case 3:
+            printf("Set XYZ Data\n");
             file_type = ase;
             break;
         default:
@@ -151,8 +155,15 @@ bool match_jdftx_ion_line(const char* line){return std::regex_match(line,re_jdft
 
 
 
-const std::regex re_xyz_lattice("^Lattice=");
-bool match_xyz_lattice(const char* line){return std::regex_match(line,re_xyz_lattice);}
+const std::regex re_xyz_lattice("^Lattice=\"-?[[:digit:]]+\\.[[:digit:]]+");
+bool match_xyz_lattice(const char* line){
+    int count = 0;
+    char match[10] = "Lattice=";
+    for(int i = 0; i<8;i++){
+        if(line[i] == match[i]){count++;}
+    }
+    return count >7;
+}
 //const std::regex re_jdftx_ion_line("^ion");
 
 
@@ -406,11 +417,13 @@ void Dump::Set_XYZ_Lattice(std::string line){
     int count = 0;
     for(int i = 0; i<256; i++){
         if(in_side){
-            if(arr[i] == 22){break;}
+            //arr[i] == ". in ASCII " = 34
+            if(arr[i] == 34){break;}
             latt[count] = arr[i];
             count++;
         }
-        else{if(arr[i] == 22){in_side = true;}}
+        else{if(arr[i] == 34){
+            in_side = true;}}
     }
     String_List vals(latt);
     int col = 0;
@@ -586,11 +599,14 @@ void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
 
 
 void Dump::Set_Data_XYZ(std::ifstream& file_stream, size_t& pos){
+    static int ts = 1;
     std::string line;
     file_stream.seekg(pos);
     std::getline(file_stream, line);
-    this->timestep = get_int(line.c_str());
+    this->timestep = ts;
+    ts++;
     int count = 0;
+    Atom_Lines = (Atom_Line*)malloc(sizeof(Atom_Line));
     while(std::getline(file_stream, line)){
         if(match_int(line.c_str())){
             pos = file_stream.tellg();
@@ -599,7 +615,6 @@ void Dump::Set_Data_XYZ(std::ifstream& file_stream, size_t& pos){
             break;
         }
         else if(match_xyz_lattice(line.c_str())){
-            //pos = file_stream.tellg();
             Set_XYZ_Lattice(line);
         }// end of box else if
         
@@ -608,25 +623,20 @@ void Dump::Set_Data_XYZ(std::ifstream& file_stream, size_t& pos){
             int type;
             std::string str_type;
             float x,y,z;
-            Atom_Lines = (Atom_Line*)malloc(sizeof(Atom_Line));
-            std::getline(file_stream, line);
-            while(match_jdftx_ion_line(line.c_str())){
-                Atom_Lines = (Atom_Line*)realloc(Atom_Lines, (count+1)*sizeof(Atom_Line));
-                String_List sl(line);
-                id = count;
-                type = El_Hash(sl.m_words[0].c_str());
-                x = atof(sl.m_words[1].c_str());
-                y = atof(sl.m_words[2].c_str());
-                z = atof(sl.m_words[3].c_str());
-                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
-                Atom_Lines[count] = Atom_Line(id,type,cartesian_coords);
-                count ++;
-                std::getline(file_stream, line);
-                }
-            dump_num_atoms = count;
+            Atom_Lines = (Atom_Line*)realloc(Atom_Lines, (count+1)*sizeof(Atom_Line));
+            String_List sl(line);
+            id = count;
+            type = El_Hash(sl.m_words[0].c_str());
+            x = atof(sl.m_words[1].c_str());
+            y = atof(sl.m_words[2].c_str());
+            z = atof(sl.m_words[3].c_str());
+            AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
+            Atom_Lines[count] = Atom_Line(id,type,cartesian_coords);
+            count ++;
         } // end of atom line else if
       
     }// end of while loop
+    dump_num_atoms = count;
     init = true;
 }
 
@@ -657,7 +667,14 @@ void Dump_Arr::Init(const char* dat_file, int ft){
 
 Dump_Arr* Dump_Arr::Get(){return &inst;}
 Dump_Arr Dump_Arr::inst;
-Dump_Arr::~Dump_Arr(){if(init){free(dumps);}}
+Dump_Arr::~Dump_Arr(){
+    if(init){
+        for(int i = 0; i < num_dumps; i++){
+            dumps[i].~Dump();
+        }
+        free(dumps);
+    }
+}
 
 
 void Write_Dat(float* dat, int num, const char* file_name){

@@ -74,17 +74,16 @@ void Draw_Wire();
 void Draw_Rho();
 void Draw_Atoms();
 void Draw_Vector_Field();
+void Draw_Bonds();
 void Draw();
 
 float bw = 1.25;
 typedef void (*Draw_Call)();
-Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Vector_Field, Draw_Rho, Draw_Wire,Draw_Vox_Full};
+Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Vector_Field, Draw_Bonds, Draw_Wire,Draw_Vox_Full};
 void Draw(){
     while (!rend->is_open()) {
         //UI stuff
-        //rend->Set_Uniforms(l_src);
         rend->Draw_Pass();
-        //rend->Draw();
         if(Sim->Is_Init()){
         if(op->need_update){op->Set();}
             for(int i = 0; i<rend->num_calls; i++){
@@ -92,16 +91,14 @@ void Draw(){
                 Draw_Funcs[idx]();
             }
         }
-        if (Sim->Need_Update()) {
-            Sim->Updated();
-        }
+        if (Sim->Need_Update()){Sim->Updated();}
         if(op->need_update){op->need_update=false;}
         rend->poll();
     }
 
 }
 
-const char* atom_file = "../Other/meta.dump";
+const char* atom_file = "../Other/test_traj.xyz";
 
 const char* rho_file = "/Users/diggs/Desktop/VolumeData/out-Q0-rho-10-01-24/Q0-rho.dat";
 
@@ -148,39 +145,51 @@ int main(int argc, const char * argv[]) {
 void Draw_Atoms(){
     static bool init = false;
     static Sim_Box_Mesh sbm;
-    static Bond_Mesh bd;
     static Atoms_Mesh ats;
     if(!Sim->Is_Init()){return;}
     if(!init){
-        rend->Push_Mesh(sbm);
-        rend->Push_Mesh(ats);
-        rend->Push_Mesh(bd);
         sbm.Set_Data();
         ats.Set_Data();
-        bd.Set_Data();
         op->Set();
         ats.Set_Uniforms(l_src);
         sbm.Set_Uniforms(l_src);
-        bd.Set_Uniforms(l_src);
         init = true;
     }
         if(op->need_update){
             ats.Set_Uniforms(l_src);
             sbm.Set_Uniforms(l_src);
-            bd.Set_Uniforms(l_src);
         }
     sbm.Set_Shader();
     sbm.Draw();
 
     ats.Set_Shader();
     ats.Draw();
+    if (Sim->Need_Update()) {
+        ats.Set_Data();
+    }
+}
+
+
+void Draw_Bonds(){
+    static bool init = false;
+    static Bond_Mesh bd;
+    if(!Sim->Is_Init()){return;}
+    if(!init){
+        bd.Set_Data();
+        op->Set();
+        bd.Set_Uniforms(l_src);
+        init = true;
+    }
+        if(op->need_update){
+            bd.Set_Uniforms(l_src);
+        }
     bd.Set_Shader();
     bd.Draw();
     if (Sim->Need_Update()) {
-        ats.Set_Data();
         bd.Set_Data();
     }
 }
+
 
 
 
@@ -191,7 +200,6 @@ void Draw_Vector_Field(){
     static Array_of_H2O h2o;
     if(!Sim->Is_Init()){return;}
     if(!init){
-        rend->Push_Mesh(vm);
         h2o.Comp_H2O();
         vm.Set_Data(h2o);
         op->Set();
