@@ -382,9 +382,6 @@ void UI_Window::Simple_window(){
                     C_phi -=0.1;
                     op->need_update = true;
                     break;
-
-
-
                 default:
                     break;
             }
@@ -513,19 +510,23 @@ void UI_Window::Simple_window(){
     }
     if(ImGui::InputFloat("Slice High", &slice_hi, 0.05f, 0.5f, "%.2f")){Sim->slice_hi = slice_hi;op->need_update = true;}
     if(ImGui::InputFloat("Slice Low", &slice_lo, 0.05f, 0.5f, "%.2f")){Sim->slice_lo = slice_lo; op->need_update = true;}
-
+    static char save_name[128] = "none";
+    static bool save = false;
+    if(save){
+        save = false;
+        Write_Buffer(save_name);
+    }
     if (ImGui::Button("SAVE"))
         ImGui::OpenPopup("Save");
 
     // Always center this window when appearing
-    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.0f, 0.5f));
     if (ImGui::BeginPopupModal("Save", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        static char file_name[128] = "none";
-        ImGui::InputText("input text", file_name, IM_ARRAYSIZE(file_name));
+        ImGui::InputText("input text", save_name, IM_ARRAYSIZE(save_name));
         if (ImGui::Button("Save", ImVec2(120, 0))) { 
+            save = true;
             ImGui::CloseCurrentPopup();
-            Write_Buffer(file_name);
         }
         ImGui::SetItemDefaultFocus();
         ImGui::SameLine();

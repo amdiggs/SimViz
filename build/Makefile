@@ -4,6 +4,7 @@
 #   apt-get install libglfw-dev
 # Mac OS X:
 #   brew install glfw
+#   and glew I don't remember if it gets downloaded with glfw
 # MSYS2:
 #   pacman -S --noconfirm --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-glfw
 #
@@ -23,7 +24,6 @@ INC_PATHS = $(SOURCE_DIR)/Math $(SOURCE_DIR)/Resources $(SOURCE_DIR)/Rendering $
 INC_PATHS += /opt/homebrew/Cellar/freetype/2.13.3/include/freetype2
 LIB_PATHS = 
 #LDFLAGS = $(addprefix -L,$(LIB_PATHS))
-#LIBS = -lAMDmath
 
 #Platform includes and libs
 ifeq ($(UNAME_S), Linux) #LINUX
@@ -42,7 +42,7 @@ ifeq ($(UNAME_S), Darwin) #APPLE
 	INC_PATHS += /usr/local/include /opt/local/include /opt/homebrew/include
 endif
 
-ifeq ($(OS), Windows_NT) #GROSS
+ifeq ($(OS), Windows_NT) #WIN
 	ECHO_MESSAGE = "MinGW"
 	LIBS += -lglfw3 -lgdi32 -lopengl32 -limm32
 
