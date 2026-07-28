@@ -16,6 +16,7 @@
 #include "Operations.hpp"
 #include "Computes.hpp"
 #include "FileIO.hpp"
+#include <filesystem>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -217,6 +218,7 @@ void UI_Window::Init(GLFWwindow* window)
     //ImVec2 ui_size = ImGui::GetWindowSize();
     display_w = 0;
     display_h = 0;
+    m_dir = std::filesystem::current_path().string();
 
 }
 
@@ -245,6 +247,53 @@ void UI_Window::Error_PopUp(const char* msg){
     }
 }
 
+bool UI_Window::ls_dir(){
+    std::filesystem::path dir_path = m_dir;
+    static int selected_file = -1;
+    int i = 0;
+    if (ImGui::Selectable("../", selected_file == i,ImGuiSelectableFlags_DontClosePopups)){
+        size_t last_dir = m_dir.rfind('/');
+        std::string tmp = m_dir.substr(0,last_dir);
+        m_dir = tmp;
+        return false;
+    }
+    i++;
+    for( auto const& entry : std::filesystem::directory_iterator(dir_path)){
+        std::string file_name = entry.path().filename().string();
+        size_t dot_pos = file_name.rfind(".");
+        if(dot_pos < file_name.length() - 1){
+            std::string extension = file_name.substr(dot_pos + 1);
+            bool is_dump = (std::strcmp(extension.c_str(), "dump") == 0);
+            bool is_poscar = (std::strcmp(extension.c_str(), "poscar") == 0);
+            bool is_xyz = (std::strcmp(extension.c_str(), "xyz") == 0);
+            if(is_dump || is_poscar || is_xyz){
+                if (ImGui::Selectable(file_name.c_str(), selected_file == i,ImGuiSelectableFlags_DontClosePopups)){
+                    m_input_file = m_dir + "/" + file_name.c_str();
+                    if(is_dump){m_ft = 0;}
+                    else if(is_poscar){m_ft = 1;}
+                    else if(is_xyz){m_ft = 2;}
+                    return true;
+                }
+            }
+            else{
+                ImGui::TextDisabled("%s",file_name.c_str());
+            }
+        }
+        else if(entry.is_directory()){
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 1.0f, 1.0f)); // R
+                if (ImGui::Selectable(file_name.c_str(), selected_file == i,ImGuiSelectableFlags_DontClosePopups)){
+                    std::string tmp = m_dir + "/" + file_name;
+                    m_dir = tmp;
+                    ImGui::PopStyleColor();
+                    //printf("%s", m_dir.c_str());
+                    return false;
+                }
+            ImGui::PopStyleColor();
+        }
+        i++;
+    }
+    return false;
+}
 //Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Iso, Draw_Rho, Draw_Wire,Draw_Vox_Full};
 
 void UI_Window::Simple_window(){
@@ -257,7 +306,7 @@ void UI_Window::Simple_window(){
     static float C_theta = 0.0;
     static float C_phi = 0.0;
     static int timestep = 0;
-    static bool ft = false;
+    static bool file_selected = false;
     static float slice_lo = -50.;
     static float slice_hi = 50.;
     static AMD::Vec3 trans;
@@ -290,15 +339,13 @@ void UI_Window::Simple_window(){
 
     //enum File_Type {lammps, qe, jdftx, ase};
     const char* fts[4] = {"LAMMPS/dump", "Quantum Espresso", "JDFTX", "ASE/XYZ"};
-    static char atom_file[128] = "";
-    ImGui::Text("File: %s", atom_file);
+    ImGui::Text("File: %s", m_input_file.c_str());
     static bool loaded = false;
     if(!loaded){
     ImGui::SameLine();
     if (ImGui::Button("Open"))
         ImGui::OpenPopup("open");
     }
-    static int selected = -1;
 
     // Always center this window when appearing
     //enum File_Type {lammps, qe, jdftx, ase};
@@ -306,30 +353,10 @@ void UI_Window::Simple_window(){
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal("open", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::InputText("Input File", atom_file, IM_ARRAYSIZE(atom_file));
-        if (ImGui::TreeNode("File Type:"))
-        {
-            for (int n = 0; n < 4; n++)
-            {
-                if (ImGui::Selectable(fts[n], selected == n,ImGuiSelectableFlags_DontClosePopups)){
-                    selected = n;
-                    ft = true;
-                }
-            }
-            if(ft){ImGui::SetNextItemOpen(false);}
-            ImGui::TreePop();
-        }
+        file_selected = ls_dir();
         if (ImGui::Button("Open", ImVec2(120, 0))) { 
-            if(!Check_File(atom_file)){
-            sprintf(buf1,"File %s was not found\n",atom_file);
-                err=true;}
-            else if(!ft){
-            sprintf(buf1,"File type must be selected");
-                err=true;}
-            else{
-                Sim->Init(atom_file, selected);
-                loaded = true;
-            }
+            Sim->Init(m_input_file.c_str(), m_ft);
+            loaded = true;
             ImGui::CloseCurrentPopup();
         }
         ImGui::SetItemDefaultFocus();

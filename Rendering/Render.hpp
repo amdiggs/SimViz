@@ -82,7 +82,11 @@ private:
     UI_Window operator=(const UI_Window&) = delete;
     static UI_Window inst;
     bool err = false;
-    
+    bool ls_dir();
+    std::string m_dir;
+    std::string m_input_file = "";
+    int m_ft = 0;
+
 public:
     ~UI_Window();
     void Init(GLFWwindow* win);

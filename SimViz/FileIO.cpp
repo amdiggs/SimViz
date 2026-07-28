@@ -9,9 +9,7 @@
 #include "AMDmath.hpp"
 #include "AtomInfo.h"
 #include <cstdlib>
-#include <malloc/_malloc.h>
 #include <math.h>
-#include <sys/_types/_size_t.h>
 
 Dump_Arr* data = Dump_Arr::Get();
 
@@ -23,7 +21,7 @@ std::string m_comment = "^#.*";
 std::string dump_file = ".dump";
 std::string dat_file = ".dat";
 
-enum File_Type {lammps, qe, jdftx, ase};
+enum File_Type {lammps, poscar, jdftx, ase,qe};
 File_Type file_type;
 enum Coords_Type {lattice, cartiesian};
 Coords_Type coords_type;
@@ -79,8 +77,8 @@ void Set_File_Type(int ft){
             file_type = lammps;
             break;
         case 1:
-            printf("Set Quantum Espresso Data\n");
-            file_type = qe;
+            printf("Set VASP POSCAR Data\n");
+            file_type = poscar;
             break;
         case 2:
             printf("Set JDFTX Data\n");
@@ -166,7 +164,7 @@ bool match_xyz_lattice(const char* line){
 }
 //const std::regex re_jdftx_ion_line("^ion");
 
-
+//count the number of elements in a line
 unsigned int Get_Num_El(std::string line){
     bool ws = true;
     unsigned int count = 0;
@@ -211,7 +209,7 @@ void Get_Vals(std::string line, float* tmp, int* num){
     *num = num_vals;
     
 }
-
+// similar to python split()
 String_List::String_List(std::string line){
     unsigned int word_indx = 0;
     for(int i = 0; i < line.size(); i++){
@@ -278,6 +276,14 @@ float get_float(std::string fl_str)
  else{std::cout << fl_str << " is not compatable with type float" << std::endl; exit(2);}
 }
 
+
+AMD::Vec3 get_vec3(std::string line, int id_x, int id_y, int id_z){
+    String_List st(line);
+    float x = std::atof(st.m_words[id_x].c_str());
+    float y = std::atof(st.m_words[id_y].c_str());
+    float z = std::atof(st.m_words[id_z].c_str());
+    return AMD::Vec3(x,y,z);
+}
 
 //Why do I have this?
 unsigned int Hash(const char* word){
@@ -455,7 +461,8 @@ void Dump::Init(std::ifstream& file_stream, size_t& pos){
         case lammps:
             Set_Data_LAMMPS(file_stream, pos);
             break;
-        case qe:
+        case poscar:
+            Set_Data_POSCAR(file_stream, pos);
             break;
         case ase:
             Set_Data_XYZ(file_stream, pos);
@@ -530,6 +537,75 @@ void Dump::Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos){
                 AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
                 Atom_Lines[i] = Atom_Line(id,type,cartesian_coords);
                 }
+        } // end of atom line else if
+      
+    }// end of while loop
+    init = true;
+}
+
+
+void Dump::Set_Data_POSCAR(std::ifstream& file_stream, size_t& pos){
+    std::string line;
+    file_stream.seekg(pos);
+    //ignore the first two lines
+    std::getline(file_stream, line);
+    std::getline(file_stream, line);
+    int count = 0;
+    // next three are the lattice vectors
+    for(int i = 0; i < 3; i++){
+        std::getline(file_stream, line);
+        AMD::Vec3 latt_vec = get_vec3(line, 0, 1, 2);
+        m_lattice.assign_row(i, latt_vec);
+    }
+    // next two are the types of atoms and then the number of each
+
+    while(std::getline(file_stream, line)){
+        if(match_TS(line.c_str())){
+            pos = file_stream.tellg();
+            pos -= line.length() + 1;
+            file_stream.seekg(pos);
+            break;
+        }
+        
+        else if(match_Num_Atoms(line.c_str())){
+            std::getline(file_stream, line);
+            dump_num_atoms = get_int(line);
+        }
+        
+        else if(match_Box_Bounds(line.c_str())){
+            pos = file_stream.tellg();
+            Set_Lattice(file_stream, pos);
+        }// end of box else if
+        
+        else if(match_Atom_Line(line.c_str())){
+            int id;
+            int type;
+            std::string str_type;
+            float x,y,z;
+            Set_Params_LAMMPS(line);
+            Atom_Lines = (Atom_Line*)malloc(dump_num_atoms*sizeof(Atom_Line));
+            std::stringstream ss;
+            for(int i = 0; i< dump_num_atoms; i ++){
+                std::getline(file_stream, line);
+                String_List sl(line);
+                if(sl.m_num_el == 4){
+                    id = count;
+                    type = El_Hash(sl.m_words[0].c_str());
+                    x = atof(sl.m_words[1].c_str());
+                    y = atof(sl.m_words[2].c_str());
+                    z = atof(sl.m_words[3].c_str());
+                    count ++;
+                }
+                else if(sl.m_num_el == 5){
+                    id=atoi(sl.m_words[0].c_str());
+                    type = El_Hash(sl.m_words[1].c_str());
+                    x = atof(sl.m_words[2].c_str());
+                    y = atof(sl.m_words[3].c_str());
+                    z = atof(sl.m_words[4].c_str());
+                }
+                AMD::Vec3 cartesian_coords = Scaled_Coords(AMD::Vec3(x,y,z));
+                Atom_Lines[i] = Atom_Line(id,type,cartesian_coords);
+                }
             
         } // end of atom line else if
       
@@ -538,8 +614,6 @@ void Dump::Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos){
     init = true;
     
 }
-
-
 
 void Dump::Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos){
     std::string line;

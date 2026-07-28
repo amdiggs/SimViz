@@ -59,6 +59,7 @@ struct Dump
     void Init(std::ifstream& file_stream, size_t& pos);
     void Set_Data_JDFTX(std::ifstream& file_stream, size_t& pos);
     void Set_Data_LAMMPS(std::ifstream& file_stream, size_t& pos);
+    void Set_Data_POSCAR(std::ifstream& file_stream, size_t& pos);
     void Set_Data_XYZ(std::ifstream& file_stream, size_t& pos);
     void Set_Params_LAMMPS(std::string line);
     void Set_Params_JDFTX(std::string line);
