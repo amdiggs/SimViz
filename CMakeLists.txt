@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(simviz)
+project(SimViz)
 
 #Base flags
 set(CMAKE_CXX_STANDARD 17)
@@ -30,8 +30,8 @@ if(OpenGL_FOUND)
 endif()
 
 FILE(GLOB SOURCES Resources/*.cpp *.cpp)
-add_executable(pnj ${SOURCES})
-target_include_directories(pnj PUBLIC ${INCPATHS})
+add_executable(simviz ${SOURCES})
+target_include_directories(simviz PUBLIC ${INCPATHS})
 
-target_link_libraries(pnj PRIVATE ${DYLIBS})
+target_link_libraries(simviz PRIVATE ${DYLIBS})
 
