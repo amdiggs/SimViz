@@ -15,6 +15,7 @@ Compute local volumetric properties such as mass density or stoichiometry, and t
 <p align="center">
     <img src="assets/voxel.png" width="500"/>
 </p>
+
 ### Additional Features
     - Locate crystalline surfaces and find dangling bonds
     - Compute the dipole field of H2O solvated surfaces
