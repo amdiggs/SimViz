@@ -6,12 +6,15 @@ However, this project was started when other projects failed to meet the needs o
 The SimViz project provides the foundation to perform volumetric data analysis specific to your project.
 
 Compute local volumetric properties such as mass density or stoichiometry, and then visualize the reslults with an iso-surface or a voxel heat map.
-
+### Iso-surface
 <p align="center">
     <img src="assets/ISO-DB.png" width="500"/>
-    <img src="assets/voxel" width="500"/>
 </p>
 
+### Voxel Heat Map
+<p align="center">
+    <img src="assets/voxel.png" width="500"/>
+</p>
 ### Additional Features
     - Locate crystalline surfaces and find dangling bonds
     - Compute the dipole field of H2O solvated surfaces
