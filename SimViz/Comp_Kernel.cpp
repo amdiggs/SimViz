@@ -23,6 +23,7 @@ const char* arg_list = "";
 
 
 
+extern std::string shader_dir;
 
 
 static bool comment(std::string str, std::string reg_ex){
@@ -69,10 +70,8 @@ static unsigned int Hash(const char* word){
 }
 
 
-
-
 CL_Program::CL_Program(const char* file)
-{   std::string cl_file = m_folder + file;
+{   std::string cl_file = shader_dir + "/" + file;
     std::string kernel_src = Get_Kernel_String(cl_file);
     m_program = Create_Program(kernel_src.c_str());
 }
@@ -81,8 +80,6 @@ CL_Program::~CL_Program() {
      clReleaseProgram(m_program);
      clReleaseCommandQueue(m_queue);
      clReleaseContext(m_context);
-    
-    
 }
 
 cl_program CL_Program::Create_Program(const char* kernel_src) {
@@ -212,15 +209,10 @@ void CL_Kernel::set_arg_internal(size_t type_size, void* arg_ptr){
         printf("Error: Failed to set kernel arguments! %d\n", curr_arg);
         exit(1);
     }
+    else{
+        printf("succeded: to set kernel arguments! %d\n", curr_arg);
+    }
 }
-
-
-
-
-
-
-
-
 
 void CL_Kernel::Set_Arg(Arg_Type typ, size_t size, void* arg){
     int idx = num_imput_buffers;

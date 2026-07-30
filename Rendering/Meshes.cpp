@@ -461,7 +461,7 @@ Voxel_Mesh::~Voxel_Mesh()
 
 
 void Voxel_Mesh::Init(int num){
-    printf("num = %d\n",num);
+    printf("num voxels = %d\n",num);
     m_counts = (float*)malloc(num*sizeof(float));
     m_centers = (AMD::Vec3*)malloc(num*sizeof(AMD::Vec3));
     init=true;

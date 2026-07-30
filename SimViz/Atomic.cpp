@@ -91,7 +91,6 @@ Atom& Atom::operator=(const Atom& other){
     this->m_neighbors[2] = other.m_neighbors[2];
     this->m_neighbors[3] = other.m_neighbors[3];
     this->m_neighbors[4] = other.m_neighbors[4];
-    
     return *this;
 }
 
@@ -327,18 +326,13 @@ void Array_of_H2O::Comp_H2O(){
 //   This is the simulation class it contains all info about the simulation.
 
 Simulation::Simulation()
-:m_num_blocks(0), m_curr_block(0),m_num_atoms(0), m_init(false), shift(0.0,0.0,0.0) {}
-
-
+:m_num_blocks(0), m_curr_block(0),m_num_atoms(0), m_init(false),num_atom_types(0), shift(0.0,0.0,0.0) {}
 
 Simulation::~Simulation(){delete [] m_atoms; free(m_bonds);}
-
 
 Simulation Simulation::inst;
 
 Simulation* Simulation::Get(){ return &inst;}
-
-
 
 void Simulation::Init(const char* file, int ft){
     data->Init(file, ft);
@@ -356,6 +350,18 @@ void Simulation::Compute_Neighbors() {
     int count = 0;
     float dist;
     for (int i = 0; i< m_num_atoms; i++){
+        int at_typ = m_atoms[i].Get_Type();
+        bool is_in = false;
+        for(int t = 0; t < num_atom_types; t++){
+            if(at_typ == atom_types[t]){
+                is_in = true;
+                break;
+            }
+        }
+        if(!is_in){
+            atom_types[num_atom_types] = at_typ;
+            num_atom_types ++;
+        }
         AMD::Vec3 A = m_atoms[i].Get_Coords();
         if(A.x > 10000.0){continue;}
         for (int j = i+1; j< m_num_atoms; j++){
@@ -439,6 +445,10 @@ int Simulation::Num_Atoms(){
     return this->m_num_atoms;
 }
 
+int Simulation::Num_Types(){
+    return this->num_atom_types;
+}
+
 int Simulation::Num_Bonds(){
     return this->m_num_bonds;
 }
@@ -454,6 +464,9 @@ AMD::Vec3 Simulation::Sim_Box(){
     return AMD::Vec3(x, y, z);
 }
 
+int* Simulation::Types(){
+    return atom_types;
+}
 
 Atom* Simulation::Atoms(){
     return m_atoms;

@@ -429,7 +429,7 @@ void TOPCon::Compute_Dist_Value(AMD::Vec3& coords, int type){
     // 1) computed distances to bin_edges
     atom_info ai = Get_Atom_Info(type);
     float radius = ai.rad;
-    float mass = 1.0;
+    float mass = ai.mass;
     
     float r_scale = radius;
     float mass_frac = mass/sp.m_num_el;
@@ -481,13 +481,6 @@ void TOPCon::Set_MinMax() {
         }
     }
 }
-
-
-void Compute_Density(){
-    
-}
-
-
 
 
 void TOPCon::Set_Fraction_X(AMD::Vec3& coords, int type){
@@ -596,7 +589,16 @@ void TOPCon::GPU_Compute_X(float bin_width){
     k_dims.s[1] = h;
     k_dims.s[2] = d;
     int tot = w*h*d;
-    
+    cl_int3 at_types;
+    for(int i = 0; i<3;i++){
+        if(i <= Sim->Num_Types()){
+            at_types.s[i] = Sim->Types()[i];
+        }
+        else{at_types.s[i]=0;}
+        printf("at types[%d] = %d\n",i,at_types.s[i]);
+    }
+
+
     cl_float3 box;
     box.s[0] = Sim->Sim_Box().x;
     box.s[1] = Sim->Sim_Box().y;
@@ -618,14 +620,13 @@ void TOPCon::GPU_Compute_X(float bin_width){
     kr.Set_Arg(Output, tot*sizeof(float), result);
     kr.Set_Arg(Constant, sizeof(int), &num_atoms);
     kr.Set_Arg(Constant, sizeof(cl_int3), &k_dims);
+    kr.Set_Arg(Constant, sizeof(cl_int3), &at_types);
     kr.Set_Arg(Constant, sizeof(cl_float3), &box);
     
     kr.Set_Global_Dimensions(dims);
     
-    
     kr.Compute();
     kr.Read_Output(tot*sizeof(float), result);
-    
     
     int r_id = 0;
     for(int d = 0; d < m_depth; d++){
@@ -639,7 +640,7 @@ void TOPCon::GPU_Compute_X(float bin_width){
             }
         }
     }
-    //printf("tot = %d\n",tot);
+    printf("tot = %d\n",tot);
     free(result);
     
 }
@@ -659,9 +660,7 @@ float TOPCon::Average_X(int depth, int row, int col){
                 Boundary_Wrapped_Index(&a, &b, &c);
                 num_Si+=counts_Si[a][b][c];
                 num_Ox+=counts_Ox[a][b][c];
-        
             }
-
         }
     }
     m_voxels[depth][row][col].num_Si = num_Si / div;

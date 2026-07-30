@@ -17,23 +17,20 @@
 #define MAX_INPUT_BUFFERS (5)
 
 enum Arg_Type {Input, Output, Constant};
-
 class CL_Kernel;
 
 class CL_Program{
 private:
-    const std::string m_folder = "/Users/diggs/Desktop/VolumeData/Resources/Shaders/";
+    std::string m_folder;
     cl_device_id m_devices;
     cl_context m_context;
     cl_command_queue m_queue;
     cl_program m_program;
    
-    
     cl_program Create_Program(const char* kernel_src);
     
     friend class CL_Kernel;
-    
-    
+
 public:
     CL_Program(const char* file);
     ~CL_Program();
@@ -70,16 +67,12 @@ public:
     void Set_Global_Dimensions(size_t a, size_t b, size_t c);
     void Set_Global_Dimensions(size_t* glob);
 
-    
-    
     void Set_Arg(Arg_Type, size_t size, void*);
     void Set_Arg(Arg_Type, size_t size, float);
     void Set_Arg(Arg_Type, size_t size, int);
     
     void Compute();
     void Read_Output(size_t size,void* output);
-    
-    
     
 };
 

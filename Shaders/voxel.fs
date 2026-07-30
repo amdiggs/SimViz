@@ -42,7 +42,7 @@ void main()
     if(density < -1.0f){
         discard;
     }
-    color = vec4(1.0 - density,0.0,density,1.0);
+    color = vec4(1.0 - density,0.0,density,0.2 + density);
     
 }
 

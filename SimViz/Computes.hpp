@@ -94,10 +94,6 @@ private:
     void Clear();
     
     
-    
-    
-    
-    
 public:
     TOPCon();
     ~TOPCon();
@@ -121,8 +117,6 @@ public:
     float Get_Bin_Vol() const;
     float Get_Min();
     float Get_Max();
-    
-    
     
     void Print_Slice(int d);
 };

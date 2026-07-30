@@ -24,6 +24,7 @@
 #include <random>
 #include <time.h>
 #include <bitset>
+#include <filesystem>
 
 #define _GNU_SOURCE
 #include "dlfcn.h"
@@ -47,8 +48,32 @@ void free(void* ptr){
     }
 }
 
+std::string shader_dir;
 
-
+std::string Find_Shader_Dir(){
+    std::string tmp_shader_dir = "Shaders";
+    std::string build_dir = std::filesystem::current_path().string();
+    std::string curr_dir = build_dir;
+    std::string ret;
+    for(int i = 0; i<5;i++){
+        std::filesystem::path dir_path = curr_dir;
+        for(auto const& entry : std::filesystem::directory_iterator(dir_path)){
+            std::string file_name = entry.path().filename().string();
+            if(entry.is_directory()){
+                if(file_name == tmp_shader_dir){
+                    ret = curr_dir + "/Shaders";
+                    //printf("%s\n",ret.c_str());
+                    return ret;
+                }
+            }
+        }
+        size_t last_dir = curr_dir.rfind('/');
+        std::string tmp = curr_dir.substr(0,last_dir);
+        curr_dir = tmp;
+    }
+    printf("Shader Directory was not able to be found!\n");
+    std::exit(22);
+}
 
 
 std::default_random_engine gen;
@@ -80,6 +105,9 @@ void Draw();
 float bw = 1.25;
 typedef void (*Draw_Call)();
 Draw_Call Draw_Funcs[5] = {Draw_Atoms, Draw_Vector_Field, Draw_Bonds, Draw_Wire,Draw_Vox_Full};
+
+
+
 void Draw(){
     while (!rend->is_open()) {
         //UI stuff
@@ -103,7 +131,7 @@ const char* atom_file = "../Other/test_traj.xyz";
 const char* rho_file = "/Users/diggs/Desktop/VolumeData/out-Q0-rho-10-01-24/Q0-rho.dat";
 
 int main(int argc, const char * argv[]) {
-    //Sim->Init(atom_file, 0);
+    shader_dir = Find_Shader_Dir();
     Draw();
     return 0;
 }
@@ -191,9 +219,6 @@ void Draw_Bonds(){
 }
 
 
-
-
-
 void Draw_Vector_Field(){
     static bool init = false;
     static Vector_Mesh vm;
@@ -223,63 +248,33 @@ void Draw_Vector_Field(){
 
 
 void Draw_Vox_Full(){
-    TOPCon hist;
-    hist.GPU_Compute_X(bw);
-    Voxel_Mesh vx;
-    vx.Set_Data(hist);
-
-    //PinHole ph;
-    //ph.Compute_Volume(hist);
-    //Voxel_Mesh2 vx2;
-    //vx2.Set_Data(ph);
-
-
-    //float v, si, ox;
-    //ui.Push_Item("average x", &v);
-    //ui.Push_Item("Num Si", &si);
-    //ui.Push_Item("Num O", &ox);
-    //si = ph.Get_Num_Si();
-    //ox = ph.Get_Num_Ox();
-    //v = ox / si;
-    //ph.Write_Data();
-        //General stuff
-        if(op->need_update){
-            op->Set();
-            vx.Set_Uniforms();
-            //vx2.Set_Uniforms();
-            op->need_update = false;
-        }
-
-        //UI stuff
-
-
-
-
-        //vx2.Set_Shader();
-        //vx2.Draw();
+    static bool init = false;
+    static TOPCon hist;
+    static Voxel_Mesh vx;
+    if(!Sim->Is_Init()){return;}
+    if(!init){
+        hist.GPU_Compute_X(bw);
+        vx.Set_Data(hist);
+        op->Set();
+        vx.Set_Uniforms();
+        init = true;
+    }
+    //General stuff
+    if(op->need_update){
+        op->Set();
+        vx.Set_Uniforms();
+        op->need_update = false;
+    }
 
         vx.Set_Shader();
         vx.Draw();
 
-
-
         if (Sim->Need_Update()) {
             hist.GPU_Compute_X(bw);
-            //ph.Compute_Volume(hist);
             vx.Set_Data(hist);
-            //vx2.Set_Data(ph);
-
-            //si = ph.Get_Num_Si();
-            //ox = ph.Get_Num_Ox();
-            //v = ox / si;
-            //ph.Write_Data();
             Sim->Updated();
         }
-
     }
-
-
-
 
 
 void Draw_Rho(){
@@ -295,8 +290,6 @@ void Draw_Rho(){
     iso.Set_Data(rho);
     Atoms_Mesh ats;
     //ats.Set_Data(rho);
-
-
 
         //General stuff
         if(op->need_update){
@@ -722,6 +715,65 @@ free(arr[i]);
 
 free(arr);
 }
+
+
+
+void Draw_Vox_Full(){
+    TOPCon hist;
+    hist.GPU_Compute_X(bw);
+    Voxel_Mesh vx;
+    vx.Set_Data(hist);
+
+    //PinHole ph;
+    //ph.Compute_Volume(hist);
+    //Voxel_Mesh2 vx2;
+    //vx2.Set_Data(ph);
+
+
+    //float v, si, ox;
+    //ui.Push_Item("average x", &v);
+    //ui.Push_Item("Num Si", &si);
+    //ui.Push_Item("Num O", &ox);
+    //si = ph.Get_Num_Si();
+    //ox = ph.Get_Num_Ox();
+    //v = ox / si;
+    //ph.Write_Data();
+        //General stuff
+        if(op->need_update){
+            op->Set();
+            vx.Set_Uniforms();
+            //vx2.Set_Uniforms();
+            op->need_update = false;
+        }
+
+        //UI stuff
+
+
+
+
+        //vx2.Set_Shader();
+        //vx2.Draw();
+
+        vx.Set_Shader();
+        vx.Draw();
+
+
+
+        if (Sim->Need_Update()) {
+            hist.GPU_Compute_X(bw);
+            //ph.Compute_Volume(hist);
+            vx.Set_Data(hist);
+            //vx2.Set_Data(ph);
+
+            //si = ph.Get_Num_Si();
+            //ox = ph.Get_Num_Ox();
+            //v = ox / si;
+            //ph.Write_Data();
+            Sim->Updated();
+        }
+
+    }
+
 
 
 

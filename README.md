@@ -9,6 +9,7 @@ Compute local volumetric properties such as mass density or stoichiometry, and t
 
 <p align="center">
     <img src="assets/ISO-DB.png" width="500"/>
+    <img src="assets/voxel" width="500"/>
 </p>
 
 ### Additional Features

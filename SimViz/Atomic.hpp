@@ -137,6 +137,9 @@ private:
     int m_num_bonds;
     Bond* m_bonds=NULL;
     
+    int num_atom_types;
+    int atom_types[10];
+    
     bool m_init;
     bool m_need_update = false;
     //private functions
@@ -164,9 +167,11 @@ public:
     int Num_Atoms();
     int Num_Bonds();
     int Num_Blocks();
+    int Num_Types();
     AMD::Vec3 Sim_Box();
     Atom* Atoms();
     Bond* Bonds();
+    int* Types();
     bool Is_Init();
     bool Need_Update(){return m_need_update;}
     void Updated(){m_need_update = false;}

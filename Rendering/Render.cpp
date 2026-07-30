@@ -280,7 +280,7 @@ bool UI_Window::ls_dir(){
             }
         }
         else if(entry.is_directory()){
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 1.0f, 1.0f)); // R
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 1.0f, 1.0f)); // R
                 if (ImGui::Selectable(file_name.c_str(), selected_file == i,ImGuiSelectableFlags_DontClosePopups)){
                     std::string tmp = m_dir + "/" + file_name;
                     m_dir = tmp;
@@ -353,15 +353,17 @@ void UI_Window::Simple_window(){
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal("open", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        file_selected = ls_dir();
-        if (ImGui::Button("Open", ImVec2(120, 0))) { 
-            Sim->Init(m_input_file.c_str(), m_ft);
-            loaded = true;
-            ImGui::CloseCurrentPopup();
+        if(ls_dir()){file_selected = true;}
+        if(file_selected){
+            if (ImGui::Button("Open", ImVec2(120, 0))) { 
+                Sim->Init(m_input_file.c_str(), m_ft);
+                loaded = true;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
         }
-        ImGui::SetItemDefaultFocus();
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
         ImGui::EndPopup();
     }
 
