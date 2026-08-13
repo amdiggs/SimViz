@@ -15,17 +15,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <map>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 
 extern int num_atoms;
 const std::string Image_Folder =  "/Users/diggs/Desktop/OpenGL/OTHER/";
-
-//static unsigned int seed = (unsigned int)std::chrono::system_clock::now().time_since_epoch().count();
-//std::minstd_rand0 gen (seed);
-//std::uniform_int_distribution<> color(0,255);
-
-std::map<char, Character> CHAR_MAP;
 
 
 Texture::Texture(int layer)
@@ -263,77 +255,6 @@ void Texture3D::Cavity(AMD::Vec3* vecs, int num_vecs, AMD::Vec3 box_bounds){
     Gen_Tex_3D((void*)RGB_Data);
 }
 
-
-
-//#####################################################################
-Character::Character(unsigned int tex_id, AMD::Vec2 s, AMD::Vec2 B, unsigned int advance)
-:m_id(tex_id), Size(s.x, s.y), Bearing(B.x, B.y), Advance(advance){}
-
-Character::Character()
-:m_id(0), Size(0.0, 0.0), Bearing(0.0, 0.0), Advance(0){}
-
-void Gen_Char_Map(){
-    FT_Library lib;
-    
-    FT_Error error = FT_Init_FreeType(&lib);
-    
-    if(error){
-        std::cout << "error loading free_type library!!!\n";
-    }
-    FT_Face face;
-    
-    error = FT_New_Face(lib, "/System/Library/Fonts/Helvetica.ttc", 0, &face);
-    
-    if(error == FT_Err_Unknown_File_Format){
-        std::cout << "error loading free_type face!!!\n";
-    }
-    
-    else if (error){
-        std::cout << "error unknown error face!!!\n";
-    }
-    
-    FT_Set_Pixel_Sizes(face, 0, 48);
-    
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    
-    for (unsigned char c = 0; c<128; c++){
-        if (FT_Load_Char(face, c, FT_LOAD_RENDER)){
-            std::cout << "error failed to load GLYPH!!!\n";
-            continue;
-        }
-        // generate texture
-           unsigned int texture;
-           glGenTextures(1, &texture);
-           glBindTexture(GL_TEXTURE_2D, texture);
-           glTexImage2D(
-               GL_TEXTURE_2D,
-               0,
-               GL_RED,
-               face->glyph->bitmap.width,
-               face->glyph->bitmap.rows,
-               0,
-               GL_RED,
-               GL_UNSIGNED_BYTE,
-               face->glyph->bitmap.buffer
-           );
-           // set texture options
-           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-           // now store character for later use
-           Character character(texture,
-               AMD::Vec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-               AMD::Vec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-               (unsigned int)face->glyph->advance.x);
-        
-        CHAR_MAP[c] = character;
-    }
-   
-    FT_Done_Face(face);
-    FT_Done_FreeType(lib);
-    
-}
 
 
 

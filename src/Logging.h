@@ -27,20 +27,20 @@ void Print_Vals_T(T vals, int num_vals){
     return;
 }
 
-void print(bool x){Print_Value_T<bool>(x);}
-void print(char x){Print_Value_T<char>(x);}
-void print(char* x){Print_Value_T<char*>(x);}
-void print(int x){Print_Value_T<int>(x);}
-void print(float x){Print_Value_T<float>(x);}
-void print(double x){Print_Value_T<double>(x);}
+inline void print(bool x){Print_Value_T<bool>(x);}
+inline void print(char x){Print_Value_T<char>(x);}
+inline void print(char* x){Print_Value_T<char*>(x);}
+inline void print(int x){Print_Value_T<int>(x);}
+inline void print(float x){Print_Value_T<float>(x);}
+inline void print(double x){Print_Value_T<double>(x);}
 
-void print(bool* x, int num){Print_Vals_T<bool*>(x, num);}
-void print(char* x, int num){Print_Vals_T<char*>(x, num);}
-void print(char** x, int num){Print_Vals_T<char**>(x, num);}
-void print(int* x, int num){Print_Vals_T<int*>(x, num);}
-void print(float* x, int num){Print_Vals_T<float*>(x, num);}
-void print(double* x, int num){Print_Vals_T<double*>(x, num);}
-void print(float** x, int rows, int cols){
+inline void print(bool* x, int num){Print_Vals_T<bool*>(x, num);}
+inline void print(char* x, int num){Print_Vals_T<char*>(x, num);}
+inline void print(char** x, int num){Print_Vals_T<char**>(x, num);}
+inline void print(int* x, int num){Print_Vals_T<int*>(x, num);}
+inline void print(float* x, int num){Print_Vals_T<float*>(x, num);}
+inline void print(double* x, int num){Print_Vals_T<double*>(x, num);}
+inline void print(float** x, int rows, int cols){
 
     for (int i = 0; i<rows; i++){
         for (int j = 0; j< cols; j++){
@@ -61,7 +61,7 @@ void print(float** x, int rows, int cols){
 }
 
 
-void ERROR_LOG(int err_value){
+inline void ERROR_LOG(int err_value){
     switch (err_value) {
         case -10:
             print("INDEX OUT OF RANGE!!");
@@ -73,7 +73,7 @@ void ERROR_LOG(int err_value){
     }
 }
 /*
-void ERROR(const char* message){
+inline void ERROR(const char* message){
     std::cout << "Error!!! " << message << "\n";
     exit(10);
 }

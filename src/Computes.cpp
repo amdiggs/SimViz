@@ -10,8 +10,8 @@
 #include "Comp_Kernel.hpp"
 #include "Meshes.hpp"
 #include "FileIO.hpp"
-#include "MyOpenCL/ErrorLogging.h"
-#include "MyOpenCL/OpenCL_Funcs.h"
+#include "CL_ErrorLogging.h"
+#include "OpenCL_Funcs.h"
 #include "AtomInfo.h"
 extern Simulation* Sim;
 static Vox_Sphere sp;

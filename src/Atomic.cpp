@@ -10,8 +10,6 @@
 #include "FileIO.hpp"
 #include "AtomInfo.h"
 #include "Meshes.hpp"
-#include <cstddef>
-#include <malloc/_malloc.h>
 Simulation* Sim = Simulation::Get();
 extern Dump_Arr* data;
 
@@ -342,7 +340,7 @@ void Simulation::Init(const char* file, int ft){
     Set_Block(0);
     m_bonds = (Bond*)malloc(6*m_num_atoms*sizeof(Bond));
     Compute_Neighbors();
-    Check_Nebs();
+    //Check_Nebs();
     m_init = true;
     m_need_update = true;
 }

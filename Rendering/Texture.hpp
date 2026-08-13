@@ -72,48 +72,4 @@ public:
 };
 
 
-struct Character {
-    unsigned int m_id;
-    AMD::Vec2 Size;
-    AMD::Vec2 Bearing;
-    unsigned int Advance;
-    Character();
-    Character(unsigned int tex_id, AMD::Vec2 s, AMD::Vec2 B, unsigned int advance);
-};
-
-void Gen_Char_Map();
-
 #endif /* Texture_hpp */
-
-/*
-class Rand{
-public:
-    Rand(const Rand&) = delete;
-    
-    static Rand& Get();
-    double r_u_d(double, double);
-    int r_uni_int(int, int);
-    int rand_color();
-    double rand_normal_color();
-    double return_rate();
-    double escape_rate();
-    double get_time(double);
-    
-    void set_temp(float temp);
-private:
-    Rand() {}
-    float m_temp;
-    
-
-};
-
-float Letter_Check(int i, int j, char let);
-void X_hat(GLubyte (*dat)[128][4]);
-void Y_hat(GLubyte (*dat)[128][4]);
-void Z_hat(GLubyte (*dat)[128][4]);
-void bind_multi(int layer);
-void axis_texture(int layer,const Shader& sh);
-void Off_set(Atom* ats,const Shader& sh);
-void Gen_Gaussian(int layer,const Shader& sh);
-*/
-

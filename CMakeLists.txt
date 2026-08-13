@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-Wall")
 
-set(INCPATHS "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
+set(INCPATHS "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/Resources" "${CMAKE_CURRENT_SOURCE_DIR}/Rendering" "${CMAKE_CURRENT_SOURCE_DIR}/Math" "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(DYLIBS "")
 #find_package(PkgConfig REQUIRED)
@@ -29,7 +29,7 @@ if(OpenGL_FOUND)
     endif()
 endif()
 
-FILE(GLOB SOURCES Resources/*.cpp *.cpp)
+FILE(GLOB SOURCES Math/*.cpp Rendering/*.cpp Resources/*.cpp src/*.cpp)
 add_executable(simviz ${SOURCES})
 target_include_directories(simviz PUBLIC ${INCPATHS})
 

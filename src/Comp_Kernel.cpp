@@ -209,9 +209,6 @@ void CL_Kernel::set_arg_internal(size_t type_size, void* arg_ptr){
         printf("Error: Failed to set kernel arguments! %d\n", curr_arg);
         exit(1);
     }
-    else{
-        printf("succeded: to set kernel arguments! %d\n", curr_arg);
-    }
 }
 
 void CL_Kernel::Set_Arg(Arg_Type typ, size_t size, void* arg){
